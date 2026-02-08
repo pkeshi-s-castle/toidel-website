@@ -1,0 +1,8 @@
+- name: WhatsApp
+  link: https://wa.me/15551234567
+  new_window: true
+  social_icon: WhatsApp
+- name: Instagram
+  link: https://instagram.com/
+  social_icon: Instagram
+  new_window: true

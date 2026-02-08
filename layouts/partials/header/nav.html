@@ -1,0 +1,25 @@
+<nav>
+	<a class="nav-toggle" id="open-nav" href="#">&#9776;</a>
+	{{ if .Site.Menus.main }}
+		{{ $currentPage := . }}
+		{{ range .Site.Menus.main }}
+			{{ $class := "" }}
+			{{ if and .Params.highlight }}
+				{{ $class = print $class " highlight" }}
+			{{ end }}
+
+			{{ if ($currentPage.IsMenuCurrent "main" .) | and (not .Params.new_window) }}
+				{{ $class = print $class " active" }}
+			{{ end }}
+
+			<a href="{{ .URL | relURL }}" title="{{ .Name }} page" class="{{ $class }}" {{ if .Params.new_window }}target="_blank" rel="noopener"{{ end }}>{{ .Name }}</a>
+		{{ end }}
+	{{ end }}
+	{{ $phone := .Site.Params.whatsapp_number | default "" }}
+	{{ $message := .Site.Params.whatsapp_prefill | default "Hi, I would like more details" }}
+	{{ $waURL := printf "https://wa.me/%s?text=%s" $phone ($message | urlquery) }}
+	<a href="{{ $waURL }}" class="cta-link" target="_blank" rel="noopener">
+		<i class="material-icons">chat</i>
+		<span>WhatsApp</span>
+	</a>
+</nav>

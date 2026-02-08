@@ -1,0 +1,14 @@
+{{ define "main" }}
+<div class="product-container">
+	{{ partial "product-styles" . }}
+	<div class="product-details" id="inquire">
+		<h3>{{ .Params.name }}</h3>
+		{{ .Params.description_markdown | markdownify }}
+
+		{{ with .Params.price }}
+			<h4>From ${{ . }}</h4>
+		{{ end }}
+		<div class="button">{{ partial "whatsapp-button" . }}</div>
+	</div>
+</div>
+{{ end }}

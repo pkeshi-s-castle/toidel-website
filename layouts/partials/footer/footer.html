@@ -1,0 +1,51 @@
+<footer>
+	<div class="container">
+		<ul class="footer-columns">
+			<li class="about">
+				<div class="company-name">{{ readFile "static/logo.svg" | safeHTML }} <span>{{ .Site.Title }}</span></div>
+				<p class="editable">Browse our catalog and send us your order request on WhatsApp. Our associate will confirm details and availability.</p>
+			</li>
+
+			<li class="footer-nav">
+				<h4>Catalog</h4>
+				<ul>
+					{{ range .Site.Menus.main }}
+						{{ $new_window := .Params.new_window }}
+						<li><a {{ if $new_window }}target="_blank" rel="noopener"{{ end }} href="{{ .URL | relURL }}">{{ .Name }}</a></li>
+					{{ end }}
+				</ul>
+			</li>
+
+			<li class="footer-nav">
+				<h4>Information</h4>
+				<ul>
+					{{ range .Site.Menus.footer }}
+						{{ $new_window := .Params.new_window }}
+						<li><a {{ if $new_window }}target="_blank" rel="noopener"{{ end }} href="{{ .URL | relURL }}">{{ .Name }}</a></li>
+					{{ end }}
+				</ul>
+			</li>
+
+			<li>
+				<h4>Contact</h4>
+				{{ $phone := .Site.Params.whatsapp_number | default "" }}
+				{{ $message := .Site.Params.whatsapp_prefill | default "Hi, I would like more details" }}
+				{{ $waURL := printf "https://wa.me/%s?text=%s" $phone ($message | urlquery) }}
+				<p><a href="{{ $waURL }}" target="_blank" rel="noopener">Chat on WhatsApp</a></p>
+				<p class="email"><a href="mailto:{{ .Site.Params.author.email }}">{{ .Site.Params.author.email }}</a></p>
+				<p><a href="tel:{{ .Site.Params.author.phone }}">{{ .Site.Params.author.phone }}</a></p>
+
+				<div class="social-icons">
+					{{ range .Site.Data.socials }}
+						<a {{ if .new_window }}target="_blank" rel="noopener"{{ end }} href="{{ .link | relURL }}" {{ with lower .social_icon }}class="{{ . }}"{{ end }}>
+							{{ with .social_icon }}
+								{{ partial "footer/social-icon" . }}
+							{{ end }}
+						</a>
+					{{ end }}
+				</div>
+			</li>
+		</ul>
+		<p class="copyright">All Rights Reserved &copy; {{ now.Format "2006" }} {{ .Site.Title }}</p>
+	</div>
+</footer>

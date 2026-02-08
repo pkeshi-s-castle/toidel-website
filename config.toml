@@ -1,0 +1,44 @@
+baseURL = "https://example.pages.dev/"
+languageCode = "en-us"
+title = "Toidel Catalog"
+googleAnalytics = ""
+enableRobotsTXT = true
+
+disableKinds = ["taxonomy", "term"]
+
+[params]
+description = "Browse our product catalog and place your order quickly on WhatsApp."
+whatsapp_number = "15551234567"
+whatsapp_prefill = "Hi, I would like details about"
+
+[params.author]
+name = "Toidel"
+email = "hello@example.com"
+phone = "+1 555 123 4567"
+
+[params.social]
+name = "Toidel Catalog"
+links = [
+	"https://wa.me/15551234567"
+]
+
+[_select_data]
+garment_type = ["hat", "top"]
+
+[cloudcannon._options.type]
+hidden = true
+
+[cloudcannon._comments]
+map = "Update the map location and display settings."
+latitude = "Coordinates for the center marker on the map."
+longitude = "Coordinates for the center marker on the map."
+zoom = "The zoom level for the map."
+pricing_table = "Update the information in the pricing tables."
+highlight = "Emphasis the text"
+color = "The background color used in the plan name and call to action."
+new_window = "Open link in new window"
+description = "This is used for facebook shares of the page and google indexing"
+
+[cloudcannon.collections.products]
+_enabled_editors = ["data"]
+_icon = "inventory_2"

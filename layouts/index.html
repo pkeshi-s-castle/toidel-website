@@ -1,0 +1,23 @@
+{{ define "main" }}
+<ul class="product-list">
+	{{ range where .Site.Pages "Section" "products" }}
+		{{ if .Params.name }}
+			<li>
+				{{ partial "product-styles" . }}
+				<div class="product-details">
+					<h4><a href="{{ .Permalink | relURL }}">{{ .Params.name }}</a></h4>
+					<div class="product-description">
+						{{ .Params.description_markdown | markdownify | truncate 90 }}
+					</div>
+					{{ with .Params.price }}<p>From ${{ . }}</p>{{ end }}
+					{{ partial "whatsapp-button" . }}
+				</div>
+			</li>
+		{{ end }}
+	{{ end }}
+	<li></li>
+	<li></li>
+	<li></li>
+</ul>
+
+{{ end }}

@@ -1,12 +1,15 @@
 footer {
-	padding: 50px 0 50px 0;
-	font-size: 1.1.1rem;
+	padding: 60px 0 50px 0;
+	font-size: 1rem;
 	position: relative;
-	border: 1px solid #eee;
+	margin-top: 40px;
+	background: #fff;
+	border-top: 1px solid #f2e8d8;
 
 	.copyright {
-		font-size: .9rem;
+		font-size: 0.9rem;
 		margin: 20px auto 0;
+		color: #8a867f;
 	}
 
 	h2 {
@@ -23,13 +26,13 @@ footer {
 		padding: 0;
 
 		@media #{$mid-point} {
-			margin: -10px -60px 10px -60px;
+			margin: -10px -30px 10px -30px;
 		}
 
 		& > li {
 			@media #{$mid-point} {
 				flex: 1;
-				padding: 0 60px;
+				padding: 0 30px;
 			}
 
 			box-sizing: border-box;
@@ -43,11 +46,11 @@ footer {
 				padding: 0;
 				list-style: none;
 				li {
-					font-size: 1.1rem;
+					font-size: 1rem;
 					margin: 11px 0;
 					a {
 						white-space: nowrap;
-						color: #999;
+						color: #6f6b64;
 					}
 				}
 			}
@@ -60,8 +63,8 @@ footer {
 		}
 
 		p {
-			font-size: 1.1rem;
-			color: #999;
+			font-size: 1rem;
+			color: #7e7a73;
 		}
 
 		.email {
@@ -70,7 +73,7 @@ footer {
 
 		h4 {
 			margin: 0 0 1.1rem 0;
-			font-size: .9em;
+			font-size: 1rem;
 		}
 	}
 
@@ -97,36 +100,14 @@ footer {
 		line-height: 0;
 		margin: 0 10px 20px 0;
 		border-radius: 50px;
-		&.email {
-			background-color: #ff9d09;
-		}
-
-		&.facebook {
-			background-color: #3b5998;
-		}
-
-		&.twitter {
-			background-color: #55acee;
-		}
-
-		&.google-plus {
-			background-color: #db4437;
-		}
-
-		&.youtube {
-			background-color: #cd201f;
-		}
+		box-shadow: 0 8px 15px rgba(18, 28, 44, 0.15);
 
 		&.instagram {
-			background-color: #f167f5;
+			background-color: #e66c43;
 		}
 
-		&.linkedin {
-			background-color: #0077b5;
-		}
-
-		&.pinterest {
-			background-color: #C92228;
+		&.whatsapp {
+			background-color: #25d366;
 		}
 	}
 }

@@ -10,6 +10,9 @@ lerna-debug.log*
 /public/
 /resources/_gen/
 hugo_stats.json
+.hugo_build.lock
+.hugo_cache/
+.idea/
 
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json

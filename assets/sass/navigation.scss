@@ -1,6 +1,5 @@
 @media #{$below-mid-point} {
 	.nav-open {
-
 		nav {
 			border: 0;
 			z-index: 2;
@@ -14,39 +13,37 @@
 
 header {
 	color: #fff;
-	padding: 20px 0 59px 0;
-	background: linear-gradient(135deg, $brand-color 0%, $brand-color-2 100%);
+	padding: 20px 0 74px 0;
+	background: linear-gradient(120deg, #f26a2e 0%, #f49e31 36%, #1f9d8b 100%);
 	position: relative;
+	overflow: hidden;
+
+	&:before,
+	&:after {
+		content: "";
+		position: absolute;
+		border-radius: 50%;
+		opacity: 0.22;
+	}
+
+	&:before {
+		width: 330px;
+		height: 330px;
+		background: #fff;
+		top: -140px;
+		right: -90px;
+	}
+
+	&:after {
+		width: 220px;
+		height: 220px;
+		background: #f4c542;
+		left: -90px;
+		bottom: -80px;
+	}
 
 	p {
 		margin: 0;
-	}
-	@media #{$mid-point} {
-		&:before, &:after {
-			content: "";
-			width: 25%;
-			display: block;
-			position: absolute;
-			border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
-			transform: translate(-50%, 0);
-
-		}
-
-		&:before {
-			transform: skewX(-15deg);
-			box-shadow: 99px 29px 170px -24px rgba(0,0,0,.05);
-			top: -254px;
-			bottom: 50%;
-			left: 43%
-		}
-
-		&:after {
-			box-shadow: inset 92px -41px 104px -28px rgba(0,0,0,.05);
-			transform: skewX(-12deg);
-			top: 47%;
-			left: 40%;
-			bottom: -121px;
-		}
 	}
 
 	a {
@@ -75,16 +72,16 @@ nav {
 	a {
 		margin: 0 3px;
 		padding: 20px 10px;
-		border-bottom: 1px solid rgba(255,255,255,0);
-		color: rgba(255,255,255,.6);
+		border-bottom: 1px solid rgba(255, 255, 255, 0);
+		color: rgba(255, 255, 255, 0.78);
 		transition: 200ms ease-in color;
 		display: none;
+		font-weight: 700;
 
 		@media #{$mid-point} {
 			display: inline-block;
 			padding: 10px;
 		}
-
 
 		&.nav-toggle {
 			display: inline;
@@ -110,9 +107,10 @@ nav {
 		color: #fff;
 	}
 
-
 	a.cta-link {
 		line-height: 1;
+		background: rgba(255, 255, 255, 0.2);
+		border-radius: 99px;
 
 		i {
 			font-size: 22px;
@@ -126,31 +124,29 @@ nav {
 			display: inline-block;
 			vertical-align: middle;
 			position: relative;
-			top: 2px;
-
+			top: 1px;
 		}
 	}
 
 	@media #{$mid-point} {
 		a.cta-link {
-			border-radius: 43px;
 			color: #fff;
-			border: 1px solid rgba(255,255,255, .4);
+			border: 1px solid rgba(255, 255, 255, 0.5);
 			position: absolute;
 			right: 20px;
 			top: -2px;
-			font-size: .8em;
-			transition: border .3s ease;
-
+			font-size: 0.9em;
+			transition: all 0.25s ease;
 
 			&:hover {
 				border-color: #fff;
+				background: rgba(255, 255, 255, 0.28);
 			}
 		}
 	}
 
 	a.active {
 		color: #fff;
+		border-bottom-color: rgba(255, 255, 255, 0.65);
 	}
-
 }

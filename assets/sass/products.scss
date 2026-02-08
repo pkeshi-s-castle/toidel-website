@@ -1,23 +1,24 @@
 .styles {
 	width: 100%;
-	background: #eee;
+	background: #fff6e8;
 	position: relative;
-	padding: 20px;
+	padding: 18px;
 	box-sizing: border-box;
-	border-radius: 3px;
+	border-radius: 16px;
+	border: 1px solid #f1dfbe;
 
 	.style-picker {
 		z-index: 2;
 		display: block;
 		line-height: 0;
 		position: absolute;
-		bottom: 20px;
-		right: 20px;
+		bottom: 16px;
+		right: 16px;
 
 		> div {
-			width: 20px;
-			height: 20px;
-			border: 1px solid #000;
+			width: 18px;
+			height: 18px;
+			border: 2px solid rgba(0, 0, 0, 0.18);
 			display: inline-block;
 			margin: 0 5px 0 0;
 			border-radius: 20px;
@@ -29,48 +30,48 @@
 		display: none;
 	}
 
-	i {
-		font-size: 14rem;
-		color: #fff;
+	img {
+		display: block;
+		width: 100%;
+		height: auto;
+		border-radius: 12px;
 	}
 }
 
 .product-container {
 	display: flex;
 	flex-wrap: wrap;
-	margin-left: -40px;
+	margin-left: -32px;
 
 	.styles {
 		width: auto;
-		flex: 1 1 300px;
-		margin-left: 40px;
+		flex: 1 1 320px;
+		margin-left: 32px;
 	}
 
 	.product-details {
-		flex: 2 1 500px;
+		flex: 1 1 380px;
 		text-align: left;
-		margin-left: 40px;
+		margin-left: 32px;
+		padding-top: 6px;
+
+		h3 {
+			font-size: clamp(1.8rem, 2.6vw, 2.5rem);
+			margin-bottom: 10px;
+		}
 
 		h4 {
 			color: $brand-color;
-		}
-	}
-
-	form {
-		border: 1px solid #444;
-		padding: 20px;
-		border-radius: 2px;
-
-		label:first-child {
-			margin-top: 0;
+			font-size: 1.3rem;
 		}
 	}
 }
 
 .product-list {
-	display: flex;
-	flex-flow: wrap;
-	margin: 0 -20px;
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+	gap: 22px;
+	margin: 0;
 
 	&, > li {
 		list-style: none;
@@ -78,29 +79,41 @@
 	}
 
 	> li {
-		flex: 1 1 300px;
+		background: #fff;
+		border: 1px solid #f2e8d8;
+		border-radius: 20px;
+		padding: 14px;
+		box-shadow: 0 12px 28px rgba(28, 44, 65, 0.08);
+		transition: transform 180ms ease, box-shadow 180ms ease;
 
-		&:not(:empty) {
-			margin: 20px;
+		&:hover {
+			transform: translateY(-4px);
+			box-shadow: 0 18px 34px rgba(28, 44, 65, 0.12);
 		}
 	}
 
 	h4 {
-		margin: 10px 0 0 0;
-		padding-right: 100px;
+		margin: 16px 0 4px 0;
+		padding-right: 0;
+		font-size: 1.22rem;
 	}
 
 	p {
 		line-height: 1;
 		margin: 10px 0 0 0;
+		font-weight: 700;
+		color: #af5b2f;
 	}
 
 	.product-description p {
-		font-size: 1.1rem;
+		font-size: 1rem;
+		line-height: 1.5;
+		font-weight: 500;
+		color: #6f6b64;
+		min-height: 52px;
 	}
 
 	.catalog-action {
-		float: left;
-		margin-top: 10px;
+		margin-top: 12px;
 	}
 }

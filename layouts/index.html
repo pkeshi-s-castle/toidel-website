@@ -1,4 +1,16 @@
 {{ define "main" }}
+<section class="catalog-intro">
+	<div class="catalog-intro__eyebrow">Kids Toy Supplier</div>
+	<h3>Thoughtfully curated toys for playful learning and everyday joy.</h3>
+	<p>Browse our product catalog and send your requirement on WhatsApp. Our associate will confirm stock, wholesale pricing, and delivery schedule.</p>
+	<div class="value-pills">
+		<span>Safe Materials</span>
+		<span>Bulk Friendly</span>
+		<span>Fast Support</span>
+	</div>
+</section>
+
+<h2 class="catalog-title">Featured Toys</h2>
 <ul class="product-list">
 	{{ range where .Site.Pages "Section" "products" }}
 		{{ if .Params.name }}
@@ -15,9 +27,5 @@
 			</li>
 		{{ end }}
 	{{ end }}
-	<li></li>
-	<li></li>
-	<li></li>
 </ul>
-
 {{ end }}

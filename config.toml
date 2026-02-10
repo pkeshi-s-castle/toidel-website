@@ -1,6 +1,6 @@
 baseURL = "https://toidel.pkya.dev/"
 languageCode = "en-us"
-title = "Toidel Catalog"
+title = "toidel"
 googleAnalytics = ""
 enableRobotsTXT = true
 
@@ -17,7 +17,7 @@ email = "hello@example.com"
 phone = "+1 555 123 4567"
 
 [params.social]
-name = "Toidel Catalog"
+name = "toidel"
 links = [
 	"https://wa.me/15551234567"
 ]

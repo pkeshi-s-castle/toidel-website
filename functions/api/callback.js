@@ -75,32 +75,32 @@ async function exchangeCode({ code, clientId, clientSecret, redirectUri }) {
 }
 
 export async function onRequest(context) {
-  const { request, env } = context;
-  const requestUrl = new URL(request.url);
-  const code = requestUrl.searchParams.get("code");
-  const state = requestUrl.searchParams.get("state");
-  const returnedError = requestUrl.searchParams.get("error_description") || requestUrl.searchParams.get("error");
-
-  if (returnedError) {
-    return htmlResponse(400, scriptPage(requestUrl.origin, { message: returnedError }, true));
-  }
-
-  if (!code || !state) {
-    return htmlResponse(400, scriptPage(requestUrl.origin, { message: "Missing code or state" }, true));
-  }
-
-  const cookies = parseCookies(request);
-  if (!cookies[stateCookieName] || cookies[stateCookieName] !== state) {
-    return htmlResponse(400, scriptPage(requestUrl.origin, { message: "Invalid OAuth state" }, true));
-  }
-
-  const clientId = env.GITHUB_OAUTH_CLIENT_ID;
-  const clientSecret = env.GITHUB_OAUTH_CLIENT_SECRET;
-  if (!clientId || !clientSecret) {
-    return htmlResponse(500, scriptPage(requestUrl.origin, { message: "Missing OAuth env vars" }, true));
-  }
-
   try {
+    const { request, env } = context;
+    const requestUrl = new URL(request.url);
+    const code = requestUrl.searchParams.get("code");
+    const state = requestUrl.searchParams.get("state");
+    const returnedError = requestUrl.searchParams.get("error_description") || requestUrl.searchParams.get("error");
+
+    if (returnedError) {
+      return htmlResponse(400, scriptPage(requestUrl.origin, { message: returnedError }, true));
+    }
+
+    if (!code || !state) {
+      return htmlResponse(400, scriptPage(requestUrl.origin, { message: "Missing code or state" }, true));
+    }
+
+    const cookies = parseCookies(request);
+    if (!cookies[stateCookieName] || cookies[stateCookieName] !== state) {
+      return htmlResponse(400, scriptPage(requestUrl.origin, { message: "Invalid OAuth state" }, true));
+    }
+
+    const clientId = env.GITHUB_OAUTH_CLIENT_ID;
+    const clientSecret = env.GITHUB_OAUTH_CLIENT_SECRET;
+    if (!clientId || !clientSecret) {
+      return htmlResponse(500, scriptPage(requestUrl.origin, { message: "Missing OAuth env vars" }, true));
+    }
+
     const redirectUri = `${requestUrl.origin}/api/callback`;
     const token = await exchangeCode({ code, clientId, clientSecret, redirectUri });
 
@@ -122,6 +122,7 @@ export async function onRequest(context) {
       },
     });
   } catch (error) {
-    return htmlResponse(400, scriptPage(requestUrl.origin, { message: error.message }, true));
+    const fallbackOrigin = context?.request ? new URL(context.request.url).origin : "*";
+    return htmlResponse(500, scriptPage(fallbackOrigin, { message: error.message || "Unexpected callback error" }, true));
   }
 }

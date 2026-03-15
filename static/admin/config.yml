@@ -52,6 +52,11 @@ collections:
         name: "styles"
         widget: "list"
         required: true
+        hint: "Add at least one style, then use the Image field to upload a picture."
+        default:
+          - name: "Default"
+            color: "#cccccc"
+            image: ""
         summary: "{{fields.name}}"
         fields:
           - { label: "Style Name", name: "name", widget: "string", required: true }

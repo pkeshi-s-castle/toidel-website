@@ -51,3 +51,37 @@ Each product supports:
 - Multiple style images and colors
 
 The "Chat on WhatsApp" button is generated automatically per product.
+
+## Admin Panel (Self-Hosted, Free)
+
+This repo now includes Decap CMS at `/admin` so a non-technical partner can add/update/delete products.
+
+- Admin URL: `https://<your-domain>/admin/`
+- CMS config file: `/Users/prakash/github.com/pkeshi-s-castle/toidel-website/static/admin/config.yml`
+- OAuth endpoints (Cloudflare Pages Functions):
+  - `/Users/prakash/github.com/pkeshi-s-castle/toidel-website/functions/api/auth.js`
+  - `/Users/prakash/github.com/pkeshi-s-castle/toidel-website/functions/api/callback.js`
+
+### One-Time Setup
+
+1. Create a GitHub OAuth App:
+   - Homepage URL: `https://<your-domain>`
+   - Authorization callback URL: `https://<your-domain>/api/callback`
+2. In Cloudflare Pages project settings, add environment variables:
+   - `GITHUB_OAUTH_CLIENT_ID`
+   - `GITHUB_OAUTH_CLIENT_SECRET`
+   - Optional: `GITHUB_OAUTH_SCOPE` (default is `repo`)
+3. Update Decap repo/site values in `/Users/prakash/github.com/pkeshi-s-castle/toidel-website/static/admin/config.yml`:
+   - `backend.repo`
+   - `backend.base_url`
+   - `site_url`
+   - `display_url`
+4. Redeploy Cloudflare Pages.
+
+### Partner Workflow
+
+1. Open `https://<your-domain>/admin/`
+2. Login with GitHub.
+3. Open **Products** collection.
+4. Create, edit, or delete products.
+5. Save changes. Cloudflare Pages redeploys automatically.

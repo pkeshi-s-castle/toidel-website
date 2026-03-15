@@ -1,17 +1,5 @@
 ---
-name:
-garment_type:
-price:
-sku:
+title:
 description:
-sizes:
-  - XS
-  - Small
-  - Medium
-  - Large
-  - XL
-styles:
-  - name:
-    color:
-    image:
+picture:
 ---

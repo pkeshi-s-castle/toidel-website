@@ -1,16 +1,15 @@
 <div class="styles">
 	{{ $permalink := .Permalink | relURL }}
-	{{ range $index, $style := .Params.styles }}
-		<div class="style" data-item-id="{{ $index }}" {{ if ne $index 0 }} style="display: none" {{end}}>
+	{{ $image := .Params.picture }}
+	{{ if and (not $image) .Params.styles (gt (len .Params.styles) 0) }}
+		{{ $image = (index .Params.styles 0).image }}
+	{{ end }}
+
+	{{ with $image }}
+		<div class="style" data-item-id="0">
 			<a href="{{ $permalink }}">
-				<img src="{{ $style.image | relURL }}" alt="{{ $.Params.name }} - {{ $style.name }}">
+				<img src="{{ . | relURL }}" alt="{{ $.Title }}">
 			</a>
 		</div>
 	{{ end }}
-
-	<div class="style-picker">
-		{{ range $index, $style := .Params.styles }}
-			<div style="background-color: {{ $style.color }}" data-item-id="{{ $index }}"></div>
-		{{ end }}
-	</div>
 </div>

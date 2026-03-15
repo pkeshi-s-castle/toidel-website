@@ -10,8 +10,8 @@
 		<div class="text-container">
 			{{ if .Params.hero }}
 				<h2>{{ .Params.hero }}</h2>
-			{{ else if .Params.name }}
-				<h2>{{ .Params.name }}</h2>
+			{{ else if .Title }}
+				<h2>{{ .Title }}</h2>
 			{{ end }}
 
 			{{ if .Params.subtitle }}

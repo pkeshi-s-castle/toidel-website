@@ -12,16 +12,15 @@
 
 <h2 class="catalog-title">Featured Toys</h2>
 <ul class="product-list">
-	{{ range where .Site.Pages "Section" "products" }}
-		{{ if .Params.name }}
+	{{ range where .Site.RegularPages "Section" "products" }}
+		{{ if ne .File.BaseFileName "_defaults" }}
 			<li>
 				{{ partial "product-styles" . }}
 				<div class="product-details">
-					<h4><a href="{{ .Permalink | relURL }}">{{ .Params.name }}</a></h4>
-					<div class="product-description">
-						{{ .Params.description_markdown | markdownify | truncate 90 }}
-					</div>
-					{{ with .Params.price }}<p>From ${{ . }}</p>{{ end }}
+					<h4><a href="{{ .Permalink | relURL }}">{{ .Title }}</a></h4>
+					{{ with (.Params.description | default .Params.description_markdown) }}
+						<div class="product-description">{{ . | markdownify | truncate 90 }}</div>
+					{{ end }}
 					{{ partial "whatsapp-button" . }}
 				</div>
 			</li>

@@ -21,44 +21,10 @@ collections:
     extension: md
     format: frontmatter
     slug: "{{slug}}"
-    summary: "{{name}}"
+    summary: "{{title}}"
     editor:
       preview: false
     fields:
-      - { label: "Title", name: "title", widget: "string", required: false, hint: "Internal title used by Hugo." }
-      - { label: "Product Name", name: "name", widget: "string", required: true }
-      - { label: "Description", name: "description_markdown", widget: "markdown", required: true }
-      - { label: "Price", name: "price", widget: "string", required: false, hint: "Example: 9.00" }
-      - { label: "SKU", name: "sku", widget: "string", required: false }
-      - { label: "Stock", name: "stock", widget: "number", required: false, value_type: "int", min: 0 }
-      - label: "Garment Type"
-        name: "garment_type"
-        widget: "select"
-        required: false
-        options:
-          - hat
-          - top
-      - label: "Sizes"
-        name: "sizes"
-        widget: "list"
-        required: false
-        default:
-          - XS
-          - Small
-          - Medium
-          - Large
-          - XL
-      - label: "Styles"
-        name: "styles"
-        widget: "list"
-        required: true
-        hint: "Add at least one style, then use the Image field to upload a picture."
-        default:
-          - name: "Default"
-            color: "#cccccc"
-            image: ""
-        summary: "{{fields.name}}"
-        fields:
-          - { label: "Style Name", name: "name", widget: "string", required: true }
-          - { label: "Color", name: "color", widget: "color", required: false }
-          - { label: "Image", name: "image", widget: "image", required: true }
+      - { label: "Title", name: "title", widget: "string", required: true }
+      - { label: "Description", name: "description", widget: "markdown", required: false }
+      - { label: "Picture", name: "picture", widget: "image", required: true }

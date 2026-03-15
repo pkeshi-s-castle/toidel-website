@@ -45,10 +45,9 @@ Products live in `/Users/prakash/github.com/pkeshi-s-castle/toidel-website/conte
 
 Each product supports:
 
-- Name
-- Description
-- Optional price display
-- Multiple style images and colors
+- Title
+- Optional description
+- One picture
 
 The "Chat on WhatsApp" button is generated automatically per product.
 

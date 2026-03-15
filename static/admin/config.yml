@@ -2,8 +2,7 @@ backend:
   name: github
   repo: pkeshi-s-castle/toidel-website
   branch: main
-  base_url: https://toidel-website.pages.dev
-  auth_endpoint: api/auth
+  auth_endpoint: /api/auth
 
 media_folder: static/images/products
 public_folder: /images/products

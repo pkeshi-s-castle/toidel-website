@@ -27,6 +27,8 @@ function scriptPage(origin, payload, hasError) {
         if (window.opener) {
           window.opener.postMessage("authorizing:github", targetOrigin);
           window.opener.postMessage(message, targetOrigin);
+          window.opener.postMessage("authorizing:github", "*");
+          window.opener.postMessage(message, "*");
         }
         window.close();
       })();

@@ -2,7 +2,7 @@
 <div class="product-container">
 	{{ partial "product-styles" . }}
 	<div class="product-details" id="inquire">
-		<h3>{{ .Title }}</h3>
+		<h3>{{ .Params.name | default .Title }}</h3>
 		{{ with (.Params.description | default .Params.description_markdown) }}
 			{{ . | markdownify }}
 		{{ end }}

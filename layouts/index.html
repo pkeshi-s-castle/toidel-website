@@ -14,10 +14,11 @@
 <ul class="product-list">
 	{{ range where .Site.RegularPages "Section" "products" }}
 		{{ if ne .File.BaseFileName "_defaults" }}
+			{{ $productName := .Params.name | default .Title }}
 			<li>
 				{{ partial "product-styles" . }}
 				<div class="product-details">
-					<h4><a href="{{ .Permalink | relURL }}">{{ .Title }}</a></h4>
+					<h4><a href="{{ .Permalink | relURL }}">{{ $productName }}</a></h4>
 					{{ with (.Params.description | default .Params.description_markdown) }}
 						<div class="product-description">{{ . | markdownify | truncate 90 }}</div>
 					{{ end }}

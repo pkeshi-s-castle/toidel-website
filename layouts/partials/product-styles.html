@@ -1,14 +1,12 @@
 <div class="styles">
 	{{ $permalink := .Permalink | relURL }}
 	{{ $image := .Params.picture }}
-	{{ if and (not $image) .Params.styles (gt (len .Params.styles) 0) }}
-		{{ $image = (index .Params.styles 0).image }}
-	{{ end }}
+	{{ $productName := .Params.name | default .Title }}
 
 	{{ with $image }}
 		<div class="style" data-item-id="0">
 			<a href="{{ $permalink }}">
-				<img src="{{ . | relURL }}" alt="{{ $.Title }}">
+				<img src="{{ . | relURL }}" alt="{{ $productName }}">
 			</a>
 		</div>
 	{{ end }}

@@ -45,7 +45,7 @@ Products live in `/Users/prakash/github.com/pkeshi-s-castle/toidel-website/conte
 
 Each product supports:
 
-- Title
+- Name
 - Optional description
 - One picture
 

@@ -109,38 +109,77 @@ nav {
 
 	a.cta-link {
 		line-height: 1;
-		background: rgba(255, 255, 255, 0.2);
+		background: linear-gradient(135deg, rgba(214, 244, 220, 0.28), rgba(128, 216, 185, 0.2));
+		backdrop-filter: blur(8px);
 		border-radius: 99px;
+		padding: 7px 16px 7px 8px;
+		gap: 10px;
+		align-items: center;
+		border: 1px solid rgba(255, 255, 255, 0.48);
+		box-shadow: 0 12px 24px rgba(24, 70, 63, 0.18);
 
-		i {
-			font-size: 22px;
-			line-height: 1;
-			display: inline-block;
-			vertical-align: middle;
-			padding: 0 6px;
+		.cta-link__badge {
+			width: 42px;
+			height: 42px;
+			border-radius: 50%;
+			background: linear-gradient(135deg, #24c162, #169b53);
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			box-shadow: 0 8px 16px rgba(18, 125, 68, 0.32);
+			flex-shrink: 0;
+
+			svg {
+				width: 23px;
+				height: 23px;
+				fill: #fff;
+				display: block;
+			}
 		}
 
-		span {
-			display: inline-block;
-			vertical-align: middle;
-			position: relative;
-			top: 1px;
+		.cta-link__text {
+			display: flex;
+			flex-direction: column;
+			gap: 2px;
+			padding-right: 2px;
+		}
+
+		.cta-link__title,
+		.cta-link__subtitle {
+			display: block;
+		}
+
+		.cta-link__title {
+			font-size: 1rem;
+			font-weight: 800;
+			letter-spacing: 0.01em;
+			color: #fff;
+		}
+
+		.cta-link__subtitle {
+			font-size: 0.72rem;
+			font-weight: 700;
+			letter-spacing: 0.08em;
+			text-transform: uppercase;
+			color: rgba(255, 255, 255, 0.82);
 		}
 	}
 
 	@media #{$mid-point} {
 		a.cta-link {
 			color: #fff;
-			border: 1px solid rgba(255, 255, 255, 0.5);
 			position: absolute;
 			right: 20px;
-			top: -2px;
+			top: -8px;
 			font-size: 0.9em;
-			transition: all 0.25s ease;
+			transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease, border-color 0.25s ease;
+			display: inline-flex;
 
 			&:hover {
-				border-color: #fff;
-				background: rgba(255, 255, 255, 0.28);
+				border-color: rgba(255, 255, 255, 0.7);
+				background: linear-gradient(135deg, rgba(226, 248, 229, 0.34), rgba(133, 221, 190, 0.26));
+				transform: translateY(-2px);
+				box-shadow: 0 16px 28px rgba(24, 70, 63, 0.24);
 			}
 		}
 	}

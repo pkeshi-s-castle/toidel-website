@@ -1,6 +1,19 @@
-{{ $phone := .Site.Params.whatsapp_number | default "" }}
-{{ $messagePrefix := .Site.Params.whatsapp_prefill | default "Hi, I would like details about" }}
-{{ $productName := .Params.name | default .Title }}
+{{ $page := .page | default . }}
+{{ $variant := .variant | default "default" }}
+{{ $phone := $page.Site.Params.whatsapp_number | default "" }}
+{{ $messagePrefix := $page.Site.Params.whatsapp_prefill | default "Hi, I would like details about" }}
+{{ $productName := $page.Params.name | default $page.Title }}
 {{ $message := printf "%s %s" $messagePrefix $productName }}
 {{ $waURL := printf "https://wa.me/%s?text=%s" $phone ($message | urlquery) }}
-<a class="catalog-action" href="{{ $waURL }}" target="_blank" rel="noopener">Chat on WhatsApp</a>
+<a class="catalog-action{{ if eq $variant "icon" }} catalog-action--icon{{ else if eq $variant "compact" }} catalog-action--compact{{ end }}" href="{{ $waURL }}" target="_blank" rel="noopener" aria-label="Chat on WhatsApp about {{ $productName }}">
+	<span class="catalog-action__icon" aria-hidden="true">
+		<svg viewBox="0 0 24 24" role="img" focusable="false">
+			<path d="M19.05 4.94A9.77 9.77 0 0 0 12.09 2c-5.44 0-9.86 4.42-9.86 9.86 0 1.74.45 3.43 1.31 4.92L2 22l5.39-1.41a9.82 9.82 0 0 0 4.7 1.19h.01c5.44 0 9.86-4.42 9.86-9.86a9.77 9.77 0 0 0-2.91-6.98Zm-6.96 15.17h-.01a8.13 8.13 0 0 1-4.14-1.13l-.3-.18-3.2.84.86-3.12-.2-.32a8.12 8.12 0 0 1-1.25-4.34c0-4.49 3.65-8.15 8.15-8.15 2.18 0 4.23.85 5.77 2.39a8.1 8.1 0 0 1 2.38 5.77c0 4.49-3.65 8.15-8.14 8.15Zm4.47-6.11c-.24-.12-1.41-.7-1.63-.78-.22-.08-.38-.12-.54.12-.16.24-.62.78-.76.94-.14.16-.28.18-.52.06-.24-.12-1-.37-1.91-1.18-.7-.63-1.18-1.4-1.32-1.64-.14-.24-.01-.37.1-.49.1-.1.24-.28.36-.42.12-.14.16-.24.24-.4.08-.16.04-.3-.02-.42-.06-.12-.54-1.3-.74-1.78-.19-.46-.39-.4-.54-.41h-.46c-.16 0-.42.06-.64.3-.22.24-.84.82-.84 2 0 1.18.86 2.31.98 2.47.12.16 1.69 2.58 4.1 3.61.57.25 1.01.39 1.36.5.57.18 1.08.15 1.49.09.45-.07 1.41-.58 1.61-1.14.2-.56.2-1.04.14-1.14-.06-.1-.22-.16-.46-.28Z" />
+		</svg>
+	</span>
+	{{ if eq $variant "icon" }}
+		<span class="catalog-action__label catalog-action__label--sr">Chat on WhatsApp</span>
+	{{ else }}
+		<span class="catalog-action__label">Chat on WhatsApp</span>
+	{{ end }}
+</a>

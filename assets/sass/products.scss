@@ -70,6 +70,10 @@
 			color: $brand-color;
 			font-size: 1.3rem;
 		}
+
+		.catalog-action {
+			margin-top: 10px;
+		}
 	}
 }
 
@@ -89,6 +93,8 @@
 		border: 1px solid #f2e8d8;
 		border-radius: 20px;
 		padding: 14px;
+		display: flex;
+		flex-direction: column;
 		box-shadow: 0 12px 28px rgba(28, 44, 65, 0.08);
 		transition: transform 180ms ease, box-shadow 180ms ease;
 
@@ -99,9 +105,25 @@
 	}
 
 	h4 {
-		margin: 16px 0 4px 0;
+		margin: 0;
 		padding-right: 0;
 		font-size: 1.22rem;
+	}
+
+	.product-details {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
+		grid-template-areas:
+			"title action"
+			"description description";
+		gap: 12px 14px;
+		align-items: start;
+		margin-top: 16px;
+		flex: 1 1 auto;
+	}
+
+	h4 {
+		grid-area: title;
 	}
 
 	p {
@@ -111,15 +133,21 @@
 		color: #af5b2f;
 	}
 
+	.product-description {
+		grid-area: description;
+	}
+
 	.product-description p {
 		font-size: 1rem;
 		line-height: 1.5;
 		font-weight: 500;
 		color: #6f6b64;
-		min-height: 52px;
+		min-height: 0;
+		margin-bottom: 0;
 	}
 
-	.catalog-action {
-		margin-top: 12px;
+	.catalog-action--icon {
+		grid-area: action;
+		align-self: start;
 	}
 }

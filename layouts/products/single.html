@@ -6,7 +6,7 @@
 		{{ with (.Params.description | default .Params.description_markdown) }}
 			{{ . | markdownify }}
 		{{ end }}
-		<div class="button">{{ partial "whatsapp-button" . }}</div>
+		{{ partial "whatsapp-button" (dict "page" . "variant" "compact") }}
 	</div>
 </div>
 {{ end }}

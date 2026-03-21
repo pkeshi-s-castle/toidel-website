@@ -22,7 +22,7 @@
 					{{ with (.Params.description | default .Params.description_markdown) }}
 						<div class="product-description">{{ . | markdownify | truncate 90 }}</div>
 					{{ end }}
-					{{ partial "whatsapp-button" . }}
+					{{ partial "whatsapp-button" (dict "page" . "variant" "icon") }}
 				</div>
 			</li>
 		{{ end }}

@@ -27,4 +27,9 @@ collections:
     fields:
       - { label: "Name", name: "name", widget: "string", required: true }
       - { label: "Description", name: "description", widget: "markdown", required: false }
-      - { label: "Picture", name: "picture", widget: "image", required: true }
+      - label: "Pictures"
+        name: "pictures"
+        widget: "list"
+        required: true
+        min: 1
+        field: { label: "Picture", name: "picture", widget: "image" }

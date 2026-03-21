@@ -1,6 +1,6 @@
 {{ define "main" }}
 <div class="product-container">
-	{{ partial "product-styles" . }}
+	{{ partial "product-styles" (dict "page" . "showGallery" true) }}
 	<div class="product-details" id="inquire">
 		<h3>{{ .Params.name | default .Title }}</h3>
 		{{ with (.Params.description | default .Params.description_markdown) }}

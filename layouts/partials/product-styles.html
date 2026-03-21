@@ -1,16 +1,45 @@
 <div class="styles">
-	{{ $permalink := .Permalink | relURL }}
-	{{ $image := .Params.picture }}
-	{{ if and (not $image) .Params.styles (gt (len .Params.styles) 0) }}
-		{{ $image = (index .Params.styles 0).image }}
-	{{ end }}
-	{{ $productName := .Params.name | default .Title }}
+	{{ $page := .page }}
+	{{ $permalink := $page.Permalink | relURL }}
+	{{ $showGallery := .showGallery }}
+	{{ $productName := $page.Params.name | default $page.Title }}
+	{{ $images := slice }}
 
-	{{ with $image }}
-		<div class="style" data-item-id="0">
+	{{ with $page.Params.pictures }}
+		{{ range . }}
+			{{ $images = $images | append . }}
+		{{ end }}
+	{{ end }}
+
+	{{ with $page.Params.picture }}
+		{{ if eq (len $images) 0 }}
+			{{ $images = $images | append . }}
+		{{ end }}
+	{{ end }}
+
+	{{ if and (eq (len $images) 0) $page.Params.styles (gt (len $page.Params.styles) 0) }}
+		{{ range $page.Params.styles }}
+			{{ with .image }}
+				{{ $images = $images | append . }}
+			{{ end }}
+		{{ end }}
+	{{ end }}
+
+	{{ range $index, $image := $images }}
+		<div class="style" data-item-id="{{ $index }}" {{ if ne $index 0 }}style="display: none"{{ end }}>
 			<a href="{{ $permalink }}">
-				<img src="{{ . | relURL }}" alt="{{ $productName }}">
+				<img src="{{ $image | relURL }}" alt="{{ $productName }} image {{ add $index 1 }}">
 			</a>
+		</div>
+	{{ end }}
+
+	{{ if and $showGallery (gt (len $images) 1) }}
+		<div class="style-picker">
+			{{ range $index, $image := $images }}
+				<button type="button" data-item-id="{{ $index }}" {{ if eq $index 0 }}class="is-active"{{ end }}>
+					<img src="{{ $image | relURL }}" alt="{{ $productName }} thumbnail {{ add $index 1 }}">
+				</button>
+			{{ end }}
 		</div>
 	{{ end }}
 </div>

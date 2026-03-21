@@ -47,7 +47,7 @@ Each product supports:
 
 - Name
 - Optional description
-- One picture
+- One or more pictures
 
 The "Chat on WhatsApp" button is generated automatically per product.
 

@@ -1,4 +1,6 @@
 ---
 name: 32 holes Bubble Gun
-picture: /images/products/img_1379.jpg
+description: ""
+pictures:
+  - /images/products/img_1379.jpg
 ---

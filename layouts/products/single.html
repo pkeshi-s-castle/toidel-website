@@ -2,7 +2,12 @@
 <div class="product-container">
 	{{ partial "product-styles" (dict "page" . "showGallery" true) }}
 	<div class="product-details" id="inquire">
-		<h3>{{ .Params.name | default .Title }}</h3>
+		<div class="product-heading">
+			<h3>{{ .Params.name | default .Title }}</h3>
+			{{ with .Params.price }}
+				<span class="product-price-tag product-price-tag--large">{{ . }}</span>
+			{{ end }}
+		</div>
 		{{ with (.Params.description | default .Params.description_markdown) }}
 			{{ . | markdownify }}
 		{{ end }}

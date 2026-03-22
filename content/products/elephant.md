@@ -1,5 +1,6 @@
 ---
 name: Bumble the Elephant
+category: gifting-items
 description: >-
   Bumble the humble elephant is your shining star. He will always remember who
   you are and why you are here.

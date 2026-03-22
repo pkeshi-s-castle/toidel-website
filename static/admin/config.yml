@@ -26,6 +26,15 @@ collections:
       preview: false
     fields:
       - { label: "Name", name: "name", widget: "string", required: true }
+      - label: "Category"
+        name: "category"
+        widget: "select"
+        required: true
+        options:
+          - { label: "Water Tumblers & Sippers", value: "water-tumblers-sippers" }
+          - { label: "Games & Toys", value: "games-toys" }
+          - { label: "Gifting Items", value: "gifting-items" }
+      - { label: "Price (INR)", name: "price", widget: "number", required: false, value_type: "int", min: 0 }
       - { label: "Description", name: "description", widget: "markdown", required: false }
       - label: "Pictures"
         name: "pictures"

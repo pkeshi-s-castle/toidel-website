@@ -1,6 +1,6 @@
 ---
 title: About Us
-hero: About Our Catalog
+hero: About Toidel
 type: about
 
 menu:
@@ -12,10 +12,4 @@ _enabled_editors:
   - content
 ---
 
-We run a simple catalog-first sales process.
-
-1. You browse products on this site.
-2. You send your required item details on WhatsApp.
-3. Our associate confirms stock, pricing, and delivery timeline.
-
-This setup keeps ordering fast and personal without online checkout.
+We are passionate about bringing quality, style, and joy into everyday life. From sleek water tumblers and sippers to fun-filled games and thoughtfully curated gifting items, our collection is designed to add convenience, happiness, and meaning to your moments. Whether you're shopping for yourself or a loved one, we aim to deliver products that combine functionality with a touch of elegance.

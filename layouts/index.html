@@ -1,31 +1,56 @@
 {{ define "main" }}
-<section class="catalog-intro">
-	<div class="catalog-intro__eyebrow">Kids Toy Supplier</div>
-	<h3>Thoughtfully curated toys for playful learning and everyday joy.</h3>
-	<p>Browse our product catalog and send your requirement on WhatsApp. Our associate will confirm stock, wholesale pricing, and delivery schedule.</p>
-	<div class="value-pills">
-		<span>Safe Materials</span>
-		<span>Bulk Friendly</span>
-		<span>Fast Support</span>
+{{ $products := where .Site.RegularPages "Section" "products" }}
+{{ $categories := slice
+	(dict "key" "water-tumblers-sippers" "title" "Water Tumblers & Sippers" "description" "Sip in style, stay refreshed anywhere.")
+	(dict "key" "games-toys" "title" "Games & Toys" "description" "Play more, smile more - fun starts here.")
+	(dict "key" "gifting-items" "title" "Gifting Items" "description" "Gifts that wow, every single time.")
+}}
+<section class="catalog-controls" data-catalog>
+	<div class="catalog-controls__top">
+		<div>
+			<div class="catalog-intro__eyebrow">Browse by category</div>
+			<h2 class="catalog-title">Featured Collection</h2>
+		</div>
+		<label class="catalog-search" for="product-search">
+			<span class="catalog-search__icon" aria-hidden="true">
+				<svg viewBox="0 0 24 24" focusable="false">
+					<path d="M10.5 3a7.5 7.5 0 1 1 0 15 7.5 7.5 0 0 1 0-15Zm0 2a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11Zm10.21 12.79 1.5 1.5-2.12 2.12-1.5-1.5 2.12-2.12Z" />
+				</svg>
+			</span>
+			<input id="product-search" type="search" placeholder="Search products" data-product-search>
+		</label>
 	</div>
-</section>
-
-<h2 class="catalog-title">Featured Toys</h2>
-<ul class="product-list">
-	{{ range where .Site.RegularPages "Section" "products" }}
-		{{ if ne .File.BaseFileName "_defaults" }}
-			{{ $productName := .Params.name | default .Title }}
-			<li>
-				{{ partial "product-styles" (dict "page" . "showGallery" false) }}
-				<div class="product-details">
-					<h4><a href="{{ .Permalink | relURL }}">{{ $productName }}</a></h4>
-					{{ with (.Params.description | default .Params.description_markdown) }}
-						<div class="product-description">{{ . | markdownify | truncate 90 }}</div>
-					{{ end }}
-					{{ partial "whatsapp-button" (dict "page" . "variant" "icon") }}
-				</div>
-			</li>
+	<div class="catalog-tabs" aria-label="Product categories">
+		<button type="button" class="catalog-tab is-active" data-category-filter="all" aria-pressed="true">All Products</button>
+		{{ range $categories }}
+			<button type="button" class="catalog-tab" data-category-filter="{{ .key }}" aria-pressed="false">{{ .title }}</button>
 		{{ end }}
+	</div>
+	<p class="catalog-controls__hint" data-category-hint>Showing all products</p>
+	<ul class="product-list">
+		{{ range $products }}
+			{{ if ne .File.BaseFileName "_defaults" }}
+				{{ $productName := .Params.name | default .Title }}
+				{{ $description := .Params.description | default .Params.description_markdown | default "" }}
+				{{ $searchContent := printf "%s %s %s" $productName (.Params.category | default "") ($description | plainify) | lower | replaceRE "\\s+" " " }}
+				<li data-product-card data-category="{{ .Params.category | default "uncategorized" }}" data-search="{{ $searchContent }}">
+					{{ partial "product-styles" (dict "page" . "showGallery" false) }}
+					<div class="product-details">
+						<div class="product-meta">
+							<h4><a href="{{ .Permalink | relURL }}">{{ $productName }}</a></h4>
+							{{ with .Params.price }}
+								<span class="product-price-tag">{{ . }}</span>
+							{{ end }}
+						</div>
+						{{ with (.Params.description | default .Params.description_markdown) }}
+							<div class="product-description">{{ . | markdownify | truncate 90 }}</div>
+						{{ end }}
+						{{ partial "whatsapp-button" (dict "page" . "variant" "icon") }}
+					</div>
+				</li>
+			{{ end }}
 	{{ end }}
-</ul>
+	</ul>
+	<p class="catalog-empty" data-catalog-empty hidden>No products match this search yet.</p>
+</section>
 {{ end }}

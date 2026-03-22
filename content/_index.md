@@ -1,7 +1,7 @@
 ---
 title: Product Catalog
-hero: Explore Our Catalog
-subtitle: Browse products and place your order directly on WhatsApp
+hero: Toidel
+subtitle: One-stop shop for sip, play & gift.
 
 menu:
   main:

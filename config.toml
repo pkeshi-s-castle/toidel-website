@@ -8,18 +8,18 @@ disableKinds = ["taxonomy", "term"]
 
 [params]
 description = "Browse our product catalog and place your order quickly on WhatsApp."
-whatsapp_number = "919971809801"
+whatsapp_number = "919217762564"
 whatsapp_prefill = "Hi, I would like details about"
 
 [params.author]
 name = "Toidel"
 email = "toidelstore@gmail.com"
-phone = "+91 99718 09801"
+phone = "+91 92177 62564"
 
 [params.social]
 name = "toidel"
 links = [
-	"https://wa.me/919971809801"
+	"https://wa.me/919217762564"
 ]
 
 [_select_data]

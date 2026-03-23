@@ -1,16 +1,8 @@
 ---
-name: Sacha the Deer
+name: Car Race Track Adventure
 category: gifting-items
-description: >-
-  Sacha's elegant antlers have never been seen on such a beautiful t-shirt. Wear
-  this majestic beast and feel all your problems float away.
-
-
-
-  Slim Fit, 5oz 100% Cotton T-Shirt.
+description: INR 950
 pictures:
-  - /images/products/deer/black.jpg
-  - /images/products/deer/blue.jpg
-  - /images/products/deer/clay.jpg
-  - /images/products/deer/cream.jpg
+  - /images/products/img_1540.webp
+  - /images/products/img_1544.png
 ---

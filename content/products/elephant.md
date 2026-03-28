@@ -1,14 +1,8 @@
 ---
-name: Bumble the Elephant
+name: Fancy Bag With Charms
 category: gifting-items
-description: >-
-  Bumble the humble elephant is your shining star. He will always remember who
-  you are and why you are here.
-
-
-
-  Slim Fit, 5oz 100% Cotton T-Shirt.
+description: ""
 pictures:
-  - /images/products/elephant/cream.jpg
-  - /images/products/elephant/green.jpg
+  - /images/products/photoroom_20260327_122748.png
+  - /images/products/photoroom_20260327_122723.png
 ---

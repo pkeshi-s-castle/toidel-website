@@ -1,7 +1,7 @@
 ---
 name: Kuromi Stainless Steel Tumbler Gift Pack
 category: gifting-items
-price: ""
+price: 0
 description: ""
 pictures:
   - /images/products/red-white-minimalist-shoes-sale-promotion-instagram-post-2.png

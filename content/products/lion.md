@@ -1,5 +1,5 @@
 ---
-name: Smiley Foam Ball (Pack of 3)
+name: Smiley Foam Ball (Pack of 12)
 category: games-toys
 price: ""
 description: ""

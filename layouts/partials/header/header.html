@@ -1,7 +1,7 @@
 <header>
 	<div class="container">
 		<div class="company-name">
-			<a href="{{ .Site.BaseURL }}/">{{ readFile "static/logo.svg" | safeHTML }} <span>{{ .Site.Title }}</span></a>
+			<a href="{{ .Site.BaseURL }}/" aria-label="{{ .Site.Title }}">{{ readFile "static/logo.svg" | safeHTML }}</a>
 		</div>
 		{{ partial "header/nav" . }}
 	</div>

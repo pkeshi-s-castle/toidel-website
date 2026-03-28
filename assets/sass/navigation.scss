@@ -12,9 +12,9 @@
 }
 
 header {
-	color: #fff;
+	color: #1f2a3a;
 	padding: 20px 0 74px 0;
-	background: linear-gradient(120deg, #f26a2e 0%, #f49e31 36%, #1f9d8b 100%);
+	background: linear-gradient(120deg, #fff6ea 0%, #ffe9ce 48%, #e7f7f3 100%);
 	position: relative;
 	overflow: hidden;
 
@@ -29,7 +29,7 @@ header {
 	&:before {
 		width: 330px;
 		height: 330px;
-		background: #fff;
+		background: #ffd8a9;
 		top: -140px;
 		right: -90px;
 	}
@@ -37,7 +37,7 @@ header {
 	&:after {
 		width: 220px;
 		height: 220px;
-		background: #f4c542;
+		background: #cfeee7;
 		left: -90px;
 		bottom: -80px;
 	}
@@ -47,7 +47,7 @@ header {
 	}
 
 	a {
-		color: #fff;
+		color: #1f2a3a;
 		text-decoration: none;
 		z-index: 1;
 		position: relative;
@@ -72,8 +72,8 @@ nav {
 	a {
 		margin: 0 3px;
 		padding: 20px 10px;
-		border-bottom: 1px solid rgba(255, 255, 255, 0);
-		color: rgba(255, 255, 255, 0.78);
+		border-bottom: 1px solid rgba(31, 42, 58, 0);
+		color: rgba(31, 42, 58, 0.78);
 		transition: 200ms ease-in color;
 		display: none;
 		font-weight: 700;
@@ -104,7 +104,7 @@ nav {
 	}
 
 	a:hover {
-		color: #fff;
+		color: #1f2a3a;
 	}
 
 	a.cta-link {
@@ -211,7 +211,7 @@ nav {
 	}
 
 	a.active {
-		color: #fff;
-		border-bottom-color: rgba(255, 255, 255, 0.65);
+		color: #1f2a3a;
+		border-bottom-color: rgba(31, 42, 58, 0.45);
 	}
 }

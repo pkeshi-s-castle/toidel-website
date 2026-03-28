@@ -18,7 +18,7 @@
 }
 
 .hero {
-	color: #ffffff;
+	color: #1f2a3a;
 	text-align: center;
 	position: relative;
 	z-index: 99;
@@ -38,7 +38,7 @@
 	}
 
 	p {
-		color: #fff;
+		color: #3e4a5b;
 		font-size: 1.2rem;
 		max-width: 640px;
 		margin: 12px auto 0;
@@ -62,10 +62,11 @@
 		line-height: 0;
 	}
 
-	svg {
+	svg,
+	img {
 		display: block;
-		height: 46px;
 		width: 250px;
+		height: auto;
 		max-width: 52vw;
 	}
 }

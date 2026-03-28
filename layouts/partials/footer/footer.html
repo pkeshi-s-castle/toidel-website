@@ -2,7 +2,9 @@
 	<div class="container">
 		<ul class="footer-columns">
 			<li class="about">
-				<div class="company-name">{{ readFile "static/logo.svg" | safeHTML }}</div>
+				<div class="company-name">
+					<img src="{{ "/logo-original-cropped.png" | relURL }}" alt="{{ .Site.Title }} logo">
+				</div>
 				<p class="editable">Browse our catalog and send us your order request on WhatsApp. Our associate will confirm details and availability.</p>
 			</li>
 

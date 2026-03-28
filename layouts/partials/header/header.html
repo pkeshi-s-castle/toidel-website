@@ -1,7 +1,9 @@
 <header>
 	<div class="container">
 		<div class="company-name">
-			<a href="{{ .Site.BaseURL }}/" aria-label="{{ .Site.Title }}">{{ readFile "static/logo.svg" | safeHTML }}</a>
+			<a href="{{ .Site.BaseURL }}/" aria-label="{{ .Site.Title }}">
+				<img src="{{ "/logo-original-cropped.png" | relURL }}" alt="{{ .Site.Title }} logo">
+			</a>
 		</div>
 		{{ partial "header/nav" . }}
 	</div>

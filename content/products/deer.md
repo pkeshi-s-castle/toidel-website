@@ -1,6 +1,6 @@
 ---
 name: Car Race Track Adventure
-category: gifting-items
+category: games-toys
 description: INR 950
 pictures:
   - /images/products/img_1540.webp

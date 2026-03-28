@@ -1,5 +1,5 @@
 ---
-name: Fancy Bag With Charms
+name: Fancy Silicon Bag With Charms
 category: gifting-items
 description: INR 965
 pictures:

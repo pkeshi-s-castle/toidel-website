@@ -4,6 +4,6 @@ category: gifting-items
 price: ""
 description: ""
 pictures:
-  - /images/products/img_3105.png
-  - /images/products/img_3106.png
+  - /images/products/photoroom_20260322_213751.png
+  - /images/products/img_3095.jpeg
 ---

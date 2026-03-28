@@ -1,13 +1,9 @@
 ---
-name: Gerald the Giraffe
+name: Stainless Steel Flask Mug
 category: gifting-items
-description: >-
-  Gerald the giraffe isn't particularly spiritual but he has a long neck which
-  can help you in a pinch.
-
-
-
-  Slim Fit, 5oz 100% Cotton T-Shirt.
+price: ""
+description: ""
 pictures:
-  - /images/products/giraffe/green.jpg
+  - /images/products/img_3105.png
+  - /images/products/img_3106.png
 ---

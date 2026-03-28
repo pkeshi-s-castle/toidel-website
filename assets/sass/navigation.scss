@@ -14,7 +14,9 @@
 header {
 	color: #1f2a3a;
 	padding: 20px 0 74px 0;
-	background: linear-gradient(120deg, #fff6ea 0%, #ffe9ce 48%, #e7f7f3 100%);
+	background:
+		linear-gradient(120deg, rgba(255, 246, 234, 0.62) 0%, rgba(255, 233, 206, 0.58) 48%, rgba(231, 247, 243, 0.6) 100%),
+		url("/images/landing-background.PNG") center / cover no-repeat;
 	position: relative;
 	overflow: hidden;
 

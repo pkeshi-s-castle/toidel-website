@@ -16,11 +16,14 @@
 		{{ partial "footer/footer" . }}
 
 		<script>
-			document.getElementById("open-nav").onclick = function () {
-				document.body.classList.toggle("nav-open");
-				return false;
-			};
+			var navToggle = document.getElementById("open-nav");
+			if (navToggle) {
+				navToggle.onclick = function () {
+					document.body.classList.toggle("nav-open");
+					return false;
+				};
+			}
 		</script>
-		{{ with "/js/application.js" }}<script src="{{ . }}" type="text/javascript"></script> {{ end }}
+		{{ with "/js/application.js" }}<script src="{{ . }}" type="text/javascript" defer></script> {{ end }}
 	</body>
 </html>

@@ -150,6 +150,28 @@ section + section {
 	margin-bottom: 24px;
 }
 
+.catalog-category + .catalog-category {
+	margin-top: 40px;
+}
+
+.catalog-category[hidden] {
+	display: none;
+}
+
+.catalog-category__head {
+	margin-bottom: 14px;
+
+	h3 {
+		margin: 0;
+		font-size: clamp(1.35rem, 2vw, 1.75rem);
+	}
+
+	p {
+		margin: 6px 0 0;
+		color: #6f6b64;
+	}
+}
+
 .catalog-controls__top {
 	display: flex;
 	flex-wrap: wrap;

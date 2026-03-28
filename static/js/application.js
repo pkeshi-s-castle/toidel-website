@@ -34,52 +34,39 @@
 	function initCatalogFilters() {
 		document.querySelectorAll("[data-catalog]").forEach(function (catalog) {
 			var cards = Array.from(catalog.querySelectorAll("[data-product-card]"));
-			var buttons = Array.from(catalog.querySelectorAll("[data-category-filter]"));
+			var groups = Array.from(catalog.querySelectorAll("[data-category-group]"));
 			var search = catalog.querySelector("[data-product-search]");
 			var hint = catalog.querySelector("[data-category-hint]");
 			var empty = catalog.querySelector("[data-catalog-empty]");
-			var activeCategory = "all";
 			var searchTerm = "";
 
-			if (!cards.length || !buttons.length) {
+			if (!cards.length) {
 				return;
 			}
 
-			function getCategoryLabel() {
-				for (var i = 0; i < buttons.length; i += 1) {
-					if (buttons[i].getAttribute("data-category-filter") === activeCategory) {
-						return buttons[i].textContent.trim();
-					}
-				}
-				return "filtered";
-			}
-
-			function updateHint() {
+			function updateHint(visibleCount) {
 				if (!hint) {
 					return;
 				}
 
-				var label = activeCategory === "all"
-					? "Showing all products"
-					: "Showing " + getCategoryLabel() + " products";
-
 				if (searchTerm) {
-					label += ' matching "' + searchTerm + '"';
+					hint.textContent = "Showing " + visibleCount + ' products matching "' + searchTerm + '"';
+					return;
 				}
 
-				hint.textContent = label;
+				hint.textContent = "Showing all products";
 			}
 
 			function applyFilters() {
 				var visibleCount = 0;
 
 				cards.forEach(function (card) {
-					var matchesCategory = activeCategory === "all" || card.getAttribute("data-category") === activeCategory;
 					var searchValue = String(card.getAttribute("data-search") || "").toLowerCase();
 					var matchesSearch = !searchTerm || searchValue.indexOf(searchTerm) !== -1;
-					var isVisible = matchesCategory && matchesSearch;
+					var isVisible = matchesSearch;
 
 					card.hidden = !isVisible;
+					card.style.display = isVisible ? "" : "none";
 
 					if (isVisible) {
 						visibleCount += 1;
@@ -90,21 +77,33 @@
 					empty.hidden = visibleCount !== 0;
 				}
 
-				updateHint();
-			}
+				groups.forEach(function (group) {
+					var groupCards = Array.from(group.querySelectorAll("[data-product-card]"));
+					var groupVisibleCount = 0;
 
-			buttons.forEach(function (button) {
-				button.addEventListener("click", function () {
-					activeCategory = String(button.getAttribute("data-category-filter") || "all");
-					buttons.forEach(function (tabButton) {
-						var isActive = tabButton === button;
-						tabButton.classList.toggle("is-active", isActive);
-						tabButton.setAttribute("aria-pressed", isActive ? "true" : "false");
+					groupCards.forEach(function (card) {
+						if (!card.hidden) {
+							groupVisibleCount += 1;
+						}
 					});
 
-					applyFilters();
+					var groupEmpty = group.querySelector("[data-category-empty]");
+					if (groupEmpty) {
+						groupEmpty.hidden = groupVisibleCount !== 0;
+					}
+
+					if (searchTerm) {
+						var hideGroup = groupVisibleCount === 0;
+						group.hidden = hideGroup;
+						group.style.display = hideGroup ? "none" : "";
+					} else {
+						group.hidden = false;
+						group.style.display = "";
+					}
 				});
-			});
+
+				updateHint(visibleCount);
+			}
 
 			if (search) {
 				search.addEventListener("input", function () {

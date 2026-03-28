@@ -2,14 +2,14 @@ backend:
   name: github
   repo: pkeshi-s-castle/toidel-website
   branch: main
-  base_url: https://toidel-website.pages.dev
+  base_url: https://toidel.com
   auth_endpoint: api/auth
 
 media_folder: static/images/products
 public_folder: /images/products
 
-site_url: https://toidel-website.pages.dev
-display_url: https://toidel-website.pages.dev
+site_url: https://toidel.com
+display_url: https://toidel.com
 
 collections:
   - name: products
@@ -29,7 +29,8 @@ collections:
       - label: "Category"
         name: "category"
         widget: "select"
-        required: true
+        required: false
+        default: "gifting-items"
         options:
           - { label: "Water Tumblers & Sippers", value: "water-tumblers-sippers" }
           - { label: "Games & Toys", value: "games-toys" }

@@ -1,9 +1,9 @@
 {{ define "main" }}
 {{ $products := where .Site.RegularPages "Section" "products" }}
 {{ $categories := slice
-	(dict "key" "water-tumblers-sippers" "title" "Water Tumblers & Sippers" "description" "Sip in style, stay refreshed anywhere.")
-	(dict "key" "games-toys" "title" "Games & Toys" "description" "Play more, smile more - fun starts here.")
 	(dict "key" "gifting-items" "title" "Gifting Items" "description" "Gifts that wow, every single time.")
+	(dict "key" "games-toys" "title" "Games & Toys" "description" "Play more, smile more - fun starts here.")
+	(dict "key" "water-tumblers-sippers" "title" "Water Tumblers & Sippers" "description" "Sip in style, stay refreshed anywhere.")
 }}
 <section class="catalog-controls" data-catalog>
 	<div class="catalog-controls__top">
@@ -20,37 +20,53 @@
 			<input id="product-search" type="search" placeholder="Search products" data-product-search>
 		</label>
 	</div>
-	<div class="catalog-tabs" aria-label="Product categories">
-		<button type="button" class="catalog-tab is-active" data-category-filter="all" aria-pressed="true">All Products</button>
-		{{ range $categories }}
-			<button type="button" class="catalog-tab" data-category-filter="{{ .key }}" aria-pressed="false">{{ .title }}</button>
-		{{ end }}
-	</div>
 	<p class="catalog-controls__hint" data-category-hint>Showing all products</p>
-	<ul class="product-list">
+	{{ range $categories }}
+		{{ $category := . }}
+		{{ $categoryProducts := slice }}
 		{{ range $products }}
 			{{ if ne .File.BaseFileName "_defaults" }}
-				{{ $productName := .Params.name | default .Title }}
-				{{ $description := .Params.description | default .Params.description_markdown | default "" }}
-				{{ $searchContent := printf "%s %s %s" $productName (.Params.category | default "") ($description | plainify) | lower | replaceRE "\\s+" " " }}
-				<li data-product-card data-category="{{ .Params.category | default "uncategorized" }}" data-search="{{ $searchContent }}">
-					{{ partial "product-styles" (dict "page" . "showGallery" false) }}
-					<div class="product-details">
-						<div class="product-meta">
-							<h4><a href="{{ .Permalink | relURL }}">{{ $productName }}</a></h4>
-							{{ with .Params.price }}
-								<span class="product-price-tag">{{ . }}</span>
-							{{ end }}
-						</div>
-						{{ with (.Params.description | default .Params.description_markdown) }}
-							<div class="product-description">{{ . | markdownify | truncate 90 }}</div>
-						{{ end }}
-						{{ partial "whatsapp-button" (dict "page" . "variant" "icon") }}
-					</div>
-				</li>
+				{{ $resolvedCategory := .Params.category | default "gifting-items" }}
+				{{ if eq $resolvedCategory $category.key }}
+					{{ $categoryProducts = $categoryProducts | append . }}
+				{{ end }}
 			{{ end }}
+		{{ end }}
+
+		<div class="catalog-category" data-category-group>
+			<div class="catalog-category__head">
+				<h3>{{ $category.title }}</h3>
+				<p>{{ $category.description }}</p>
+			</div>
+			<ul class="product-list">
+				{{ range $categoryProducts }}
+					{{ $productName := .Params.name | default .Title }}
+					{{ $description := .Params.description | default .Params.description_markdown | default "" }}
+					{{ $searchContent := printf "%s %s %s" $productName $category.title ($description | plainify) | lower | replaceRE "\\s+" " " }}
+					<li data-product-card data-category="{{ $category.key }}" data-search="{{ $searchContent }}">
+						{{ partial "product-styles" (dict "page" . "showGallery" false) }}
+						<div class="product-details">
+							<div class="product-meta">
+								<h4><a href="{{ .Permalink | relURL }}">{{ $productName }}</a></h4>
+								{{ with .Params.price }}
+									<span class="product-price-tag">{{ . }}</span>
+								{{ end }}
+							</div>
+							<div class="product-description">
+								{{ with (.Params.description | default .Params.description_markdown) }}
+									{{ . | markdownify | truncate 90 }}
+								{{ else }}
+									<p>&nbsp;</p>
+								{{ end }}
+							</div>
+							{{ partial "whatsapp-button" (dict "page" . "variant" "icon") }}
+						</div>
+					</li>
+				{{ end }}
+			</ul>
+			<p class="catalog-empty" data-category-empty {{ if gt (len $categoryProducts) 0 }}hidden{{ end }}>No products in this category yet.</p>
+		</div>
 	{{ end }}
-	</ul>
 	<p class="catalog-empty" data-catalog-empty hidden>No products match this search yet.</p>
 </section>
 {{ end }}

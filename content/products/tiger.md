@@ -1,17 +1,9 @@
 ---
-name: Gavin the Tiger
+name: Kuromi Stainless Steel Tumbler Gift Pack
 category: gifting-items
-description: >-
-  Gavin the tiger was brought up vegan. His favorite meal is chickpea salad with
-  a lemon juice dressing.
-
-
-
-  Slim Fit, 5oz 100% Cotton T-Shirt.
+price: ""
+description: ""
 pictures:
-  - /images/products/tiger/black.jpg
-  - /images/products/tiger/blue.jpg
-  - /images/products/tiger/clay.jpg
-  - /images/products/tiger/cream.jpg
-  - /images/products/tiger/green.jpg
+  - /images/products/red-white-minimalist-shoes-sale-promotion-instagram-post-2.png
+  - /images/products/red-white-minimalist-shoes-sale-promotion-instagram-post.png
 ---

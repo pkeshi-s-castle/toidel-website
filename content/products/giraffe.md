@@ -1,6 +1,6 @@
 ---
 name: Stainless Steel Flask Mug
-category: gifting-items
+category: water-tumblers-sippers
 price: ""
 description: INR 519
 pictures:

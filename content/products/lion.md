@@ -1,13 +1,9 @@
 ---
-name: Scar the Lion
-category: gifting-items
-description: >-
-  Scar the lion is always true to himself. The Mufasa tragedy was a slight
-  blemish in what was otherwise a saint-like life.
-
-
-
-  Slim Fit, 5oz 100% Cotton T-Shirt.
+name: Smiley Foam Ball (Pack of 3)
+category: games-toys
+price: ""
+description: ""
 pictures:
-  - /images/products/lion/blue.jpg
+  - /images/products/4dff16bc-9db2-48ea-8baa-31bf426e8bbd.png
+  - /images/products/img_3267.webp
 ---

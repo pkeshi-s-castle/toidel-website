@@ -1,5 +1,5 @@
 ---
-name: Floral Tumbler- 1200 ml
+name: Floral Tumbler (1200 ml)
 category: water-tumblers-sippers
 price: 999
 description: Stay hydrated on the go with this premium stainless steel tumbler,

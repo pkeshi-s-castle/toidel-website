@@ -2,7 +2,7 @@
 name: Labubu Water Sipper
 category: water-tumblers-sippers
 price: 899
-description: Enjoy your favorite drinks with this 750 ml Labubu tumbler,
+description: Enjoy your favourite drinks with this 750 ml Labubu tumbler,
   designed for convenience and versatility. Its large capacity lets you savor a
   full serving of coffee, tea, juice, or any beverage, while the included straw
   ensures spill-free sipping on the go. The double-walled glass construction

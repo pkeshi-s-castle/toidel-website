@@ -1,6 +1,6 @@
 ---
 name: Standing Table Tennis Trainer Set
-category: gifting-items
+category: games-toys
 price: 375
 description: This table tennis trainer set features an adjustable height design,
   making it suitable for all skill levels. Its ball rebound system allows

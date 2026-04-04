@@ -15,7 +15,7 @@ description: Make playtime exciting with this \*\*viral Dancing Jellyfish
   birthdays, return gifts, or festive occasions, this best-selling kids’ gift is
   a must-have for joyful and engaging playtime.
 pictures:
-  - /images/products/product-staging-56fde90f-1bae-454e-a690-d659ddc3a3dc.jpg
+  - /images/products/product-staging-085e3983-2798-42fb-83d5-bae06e33bd14.jpg
   - /images/products/product-staging-f49065f0-9cb3-4145-9bbb-4969e8e9de68.jpg
-  - /images/products/tempimagepomzuz.jpg
+  - /images/products/product-staging-6a5f3321-3601-4001-a343-933a95a7e33f.jpg
 ---

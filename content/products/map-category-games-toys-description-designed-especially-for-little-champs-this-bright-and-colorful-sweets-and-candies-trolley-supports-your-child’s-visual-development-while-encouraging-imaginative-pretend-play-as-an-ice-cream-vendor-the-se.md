@@ -1,7 +1,7 @@
 ---
-name: Piano Baby Gym and Fitness Rack With Remote Bluetooth
+name: Piano Baby Gym and Fitness Rack (Small)
 category: games-toys
-price: 2350
+price: 800
 description: Designed especially for little champs, this bright and colorful
   sweets and candies trolley supports your child’s visual development while
   encouraging imaginative pretend play as an ice cream vendor. The set includes

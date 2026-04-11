@@ -1,7 +1,7 @@
 ---
 name: M8 Game
 category: games-toys
-price: 2015
+price: 1999
 description: This gaming console comes with two ergonomic wireless controllers,
   offering comfortable and hassle-free gameplay without tangled cords. It
   includes a micro USB cable for convenient charging and power supply, along

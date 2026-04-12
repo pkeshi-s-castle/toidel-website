@@ -1,6 +1,6 @@
 ---
 name: Stainless Steel Bento Bottle
-category: gifting-items
+category: water-tumblers-sippers
 price: 1079
 description: These compact insulated tumblers feature a cute, portable design
   with sturdy top handles, making them perfect for travel, school, or daily

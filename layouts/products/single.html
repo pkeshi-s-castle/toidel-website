@@ -11,7 +11,10 @@
 		{{ with (.Params.description | default .Params.description_markdown) }}
 			{{ . | markdownify }}
 		{{ end }}
-		{{ partial "whatsapp-button" (dict "page" . "variant" "compact") }}
+		<div class="product-actions">
+			{{ partial "cart-button" (dict "page" . "variant" "compact") }}
+			{{ partial "whatsapp-button" (dict "page" . "variant" "compact") }}
+		</div>
 	</div>
 </div>
 {{ end }}

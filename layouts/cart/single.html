@@ -1,0 +1,23 @@
+{{ define "main" }}
+{{ $phone := .Site.Params.whatsapp_number | default "" }}
+{{ $prefill := .Site.Params.whatsapp_cart_prefill | default "Hi, I would like to place this order:" }}
+<div class="cart-page" data-cart-page data-cart-phone="{{ $phone }}" data-cart-prefill="{{ $prefill }}">
+	<div class="cart-page__intro">
+		<h3>{{ .Title }}</h3>
+		{{ with .Content }}
+			{{ . }}
+		{{ end }}
+	</div>
+
+	<p class="cart-empty" data-cart-empty>Your cart is empty. Browse the catalog and add your favorite products.</p>
+	<ul class="cart-list" data-cart-items hidden></ul>
+
+	<div class="cart-summary" data-cart-summary hidden>
+		<p class="cart-summary__total">Total: <strong data-cart-total>INR 0</strong></p>
+		<div class="cart-summary__actions">
+			<a class="catalog-action catalog-action--compact" href="#" data-cart-whatsapp target="_blank" rel="noopener">Send Order on WhatsApp</a>
+			<button type="button" class="cart-clear" data-cart-clear>Clear Cart</button>
+		</div>
+	</div>
+</div>
+{{ end }}

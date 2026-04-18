@@ -5,7 +5,7 @@ Static Hugo catalog website based on the [CloudCannon Fur Hugo template](https:/
 This version is configured for inquiry-only selling flow:
 
 - No payment gateway
-- No checkout/cart
+- Local cart with WhatsApp checkout message
 - Product inquiry routed to WhatsApp
 
 ## Quick Configuration
@@ -50,6 +50,8 @@ Each product supports:
 - One or more pictures
 
 The "Chat on WhatsApp" button is generated automatically per product.
+
+The cart page (`/cart`) lets shoppers review quantities and send a WhatsApp message containing all cart items and total.
 
 ## Admin Panel (Self-Hosted, Free)
 

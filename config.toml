@@ -10,6 +10,7 @@ disableKinds = ["taxonomy", "term"]
 description = "Browse our product catalog and place your order quickly on WhatsApp."
 whatsapp_number = "919217762564"
 whatsapp_prefill = "Hi, I would like details about"
+whatsapp_cart_prefill = "Hi, I would like to place this order:"
 
 [params.author]
 name = "Toidel"

@@ -1,0 +1,17 @@
+{{ $page := .page | default . }}
+{{ $variant := .variant | default "default" }}
+{{ $productID := $page.RelPermalink }}
+{{ $productName := $page.Params.name | default $page.Title }}
+{{ $productPrice := $page.Params.price | default 0 }}
+<button class="catalog-action catalog-action--cart{{ if eq $variant "icon" }} catalog-action--icon{{ else if eq $variant "compact" }} catalog-action--compact{{ end }}" type="button" data-cart-add data-product-id="{{ $productID }}" data-product-name="{{ $productName }}" data-product-price="{{ $productPrice }}" data-product-url="{{ $page.RelPermalink }}" aria-label="Add {{ $productName }} to cart">
+	<span class="catalog-action__icon" aria-hidden="true">
+		<svg viewBox="0 0 24 24" role="img" focusable="false">
+			<path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2Zm10 0c-1.1 0-1.99.9-1.99 2S15.9 22 17 22s2-.9 2-2-.9-2-2-2ZM7.16 14h9.47a2 2 0 0 0 1.88-1.34L21 6H7.21l-.54-2.16A1 1 0 0 0 5.7 3H3a1 1 0 1 0 0 2h1.92l2.02 8.07A3 3 0 0 0 5 16a1 1 0 1 0 0 2h14a1 1 0 1 0 0-2H7a1 1 0 0 1 0-2h.16Z" />
+		</svg>
+	</span>
+	{{ if eq $variant "icon" }}
+		<span class="catalog-action__label catalog-action__label--sr">Add to Cart</span>
+	{{ else }}
+		<span class="catalog-action__label">Add to Cart</span>
+	{{ end }}
+</button>

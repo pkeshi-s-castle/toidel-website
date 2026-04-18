@@ -2,39 +2,66 @@
 	"use strict";
 	var CART_STORAGE_KEY = "toidel.cart.v1";
 	var currencyFormatter = null;
+	var elementMatches = Element.prototype.matches || Element.prototype.msMatchesSelector || Element.prototype.webkitMatchesSelector;
+
+	function forEachNode(nodeList, callback) {
+		if (!nodeList || !callback) {
+			return;
+		}
+
+		Array.prototype.forEach.call(nodeList, callback);
+	}
+
+	function closestElement(startNode, selector) {
+		var current = startNode && startNode.nodeType === 1 ? startNode : startNode && startNode.parentElement;
+
+		while (current) {
+			if (elementMatches.call(current, selector)) {
+				return current;
+			}
+
+			current = current.parentElement;
+		}
+
+		return null;
+	}
+
+	function isFiniteNumber(value) {
+		return typeof value === "number" && isFinite(value);
+	}
 
 	function initStylePicker() {
 		document.addEventListener("click", function (event) {
-			var button = event.target.closest(".style-picker button");
+			var button = closestElement(event.target, ".style-picker button");
 			if (!button) {
 				return;
 			}
 
 			event.preventDefault();
 
-			var stylesContainer = button.closest(".styles");
+			var stylesContainer = closestElement(button, ".styles");
 			if (!stylesContainer) {
 				return;
 			}
 
 			var id = String(button.getAttribute("data-item-id") || "");
-			stylesContainer.querySelectorAll(".style").forEach(function (style) {
+			forEachNode(stylesContainer.querySelectorAll(".style"), function (style) {
 				style.style.display = style.getAttribute("data-item-id") === id ? "" : "none";
 			});
 
-			var picker = button.closest(".style-picker");
+			var picker = closestElement(button, ".style-picker");
 			if (!picker) {
 				return;
 			}
 
-			picker.querySelectorAll("button").forEach(function (pickerButton) {
+			forEachNode(picker.querySelectorAll("button"), function (pickerButton) {
 				pickerButton.classList.toggle("is-active", pickerButton === button);
 			});
 		});
 	}
 
 	function initCatalogFilters() {
-		document.querySelectorAll("[data-catalog]").forEach(function (catalog) {
+		forEachNode(document.querySelectorAll("[data-catalog]"), function (catalog) {
 			var cards = Array.from(catalog.querySelectorAll("[data-product-card]"));
 			var groups = Array.from(catalog.querySelectorAll("[data-category-group]"));
 			var search = catalog.querySelector("[data-product-search]");
@@ -120,7 +147,7 @@
 
 	function toInteger(value, fallbackValue) {
 		var parsed = parseInt(value, 10);
-		if (!Number.isFinite(parsed)) {
+		if (!isFiniteNumber(parsed)) {
 			return fallbackValue;
 		}
 
@@ -129,7 +156,7 @@
 
 	function toPrice(value) {
 		var parsed = Number(value);
-		if (!Number.isFinite(parsed) || parsed < 0) {
+		if (!isFiniteNumber(parsed) || parsed < 0) {
 			return 0;
 		}
 
@@ -237,12 +264,12 @@
 	function updateCartBadges(items) {
 		var count = getCartCount(items);
 
-		document.querySelectorAll("[data-cart-count]").forEach(function (badge) {
+		forEachNode(document.querySelectorAll("[data-cart-count]"), function (badge) {
 			badge.textContent = String(count);
 			badge.hidden = count === 0;
 		});
 
-		document.querySelectorAll("[data-cart-link]").forEach(function (link) {
+		forEachNode(document.querySelectorAll("[data-cart-link]"), function (link) {
 			link.classList.toggle("has-items", count > 0);
 		});
 	}
@@ -371,7 +398,7 @@
 		updateCartBadges(loadCart());
 
 		document.addEventListener("click", function (event) {
-			var addButton = event.target.closest("[data-cart-add]");
+			var addButton = closestElement(event.target, "[data-cart-add]");
 			if (!addButton) {
 				return;
 			}
@@ -483,7 +510,7 @@
 		}
 
 		cartPage.addEventListener("click", function (event) {
-			var actionButton = event.target.closest("[data-cart-increment], [data-cart-decrement], [data-cart-remove]");
+			var actionButton = closestElement(event.target, "[data-cart-increment], [data-cart-decrement], [data-cart-remove]");
 			if (actionButton) {
 				event.preventDefault();
 				var itemID = actionButton.getAttribute("data-cart-item-id") || "";
@@ -518,7 +545,7 @@
 		});
 
 		cartPage.addEventListener("change", function (event) {
-			var quantityInput = event.target.closest("[data-cart-quantity]");
+			var quantityInput = closestElement(event.target, "[data-cart-quantity]");
 			if (!quantityInput) {
 				return;
 			}

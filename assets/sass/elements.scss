@@ -150,3 +150,25 @@ ul {
 		height: 22px;
 	}
 }
+
+.catalog-action--cart {
+	background: linear-gradient(135deg, #f07a2b, #f4a43b);
+	box-shadow: 0 10px 22px rgba(199, 112, 32, 0.26);
+}
+
+.catalog-action--cart:hover {
+	background: linear-gradient(135deg, #e06d20, #ef9830);
+	box-shadow: 0 14px 26px rgba(199, 112, 32, 0.3);
+}
+
+.catalog-action--cart.is-added {
+	background: linear-gradient(135deg, #199f73, #25b584);
+	box-shadow: 0 14px 26px rgba(27, 136, 101, 0.3);
+}
+
+.catalog-action.is-disabled {
+	opacity: 0.55;
+	pointer-events: none;
+	transform: none;
+	box-shadow: none;
+}

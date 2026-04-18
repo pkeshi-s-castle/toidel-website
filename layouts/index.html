@@ -59,7 +59,10 @@
 									<p>&nbsp;</p>
 								{{ end }}
 							</div>
-							{{ partial "whatsapp-button" (dict "page" . "variant" "icon") }}
+							<div class="product-actions">
+								{{ partial "cart-button" (dict "page" . "variant" "compact") }}
+								{{ partial "whatsapp-button" (dict "page" . "variant" "icon") }}
+							</div>
 						</div>
 					</li>
 				{{ end }}

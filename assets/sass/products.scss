@@ -383,6 +383,30 @@
 	align-items: center;
 }
 
+.cart-payment-status {
+	margin: 12px 0 0;
+	padding: 10px 12px;
+	border-radius: 12px;
+	font-size: 0.96rem;
+	line-height: 1.4;
+	font-weight: 700;
+	border: 1px solid #d7e8ff;
+	background: #edf5ff;
+	color: #1f4f88;
+}
+
+.cart-payment-status.is-success {
+	border-color: #b8e7d8;
+	background: #ecfaf6;
+	color: #157363;
+}
+
+.cart-payment-status.is-error {
+	border-color: #f3c7c2;
+	background: #fff1ef;
+	color: #a24334;
+}
+
 @media (max-width: 860px) {
 	.cart-item {
 		grid-template-columns: minmax(0, 1fr);

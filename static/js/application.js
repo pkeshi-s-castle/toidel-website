@@ -2,6 +2,7 @@
 	"use strict";
 	var CART_STORAGE_KEY = "toidel.cart.v1";
 	var currencyFormatter = null;
+	var razorpayScriptPromise = null;
 	var elementMatches = Element.prototype.matches || Element.prototype.msMatchesSelector || Element.prototype.webkitMatchesSelector;
 
 	function forEachNode(nodeList, callback) {
@@ -467,6 +468,172 @@
 		return "https://wa.me/" + normalizedPhone + "?text=" + encodeURIComponent(message);
 	}
 
+	function parseResponseJSON(response) {
+		return response.json().catch(function () {
+			return {};
+		});
+	}
+
+	function postJSON(url, payload) {
+		return fetch(url, {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json"
+			},
+			body: JSON.stringify(payload || {})
+		})
+			.then(function (response) {
+				return parseResponseJSON(response).then(function (data) {
+					if (!response.ok) {
+						var message = sanitizeText(data.error || data.message || "Request failed.");
+						throw new Error(message || "Request failed.");
+					}
+					return data;
+				});
+			});
+	}
+
+	function ensureRazorpayLoaded() {
+		if (window.Razorpay) {
+			return Promise.resolve(window.Razorpay);
+		}
+
+		if (razorpayScriptPromise) {
+			return razorpayScriptPromise;
+		}
+
+		razorpayScriptPromise = new Promise(function (resolve, reject) {
+			var existingScript = document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]');
+			if (existingScript) {
+				existingScript.addEventListener("load", function () {
+					if (window.Razorpay) {
+						resolve(window.Razorpay);
+						return;
+					}
+					reject(new Error("Razorpay checkout was not available after loading."));
+				});
+				existingScript.addEventListener("error", function () {
+					reject(new Error("Unable to load Razorpay checkout script."));
+				});
+				return;
+			}
+
+			var script = document.createElement("script");
+			script.src = "https://checkout.razorpay.com/v1/checkout.js";
+			script.async = true;
+			script.onload = function () {
+				if (window.Razorpay) {
+					resolve(window.Razorpay);
+					return;
+				}
+				reject(new Error("Razorpay checkout was not available after loading."));
+			};
+			script.onerror = function () {
+				reject(new Error("Unable to load Razorpay checkout script."));
+			};
+			document.head.appendChild(script);
+		})
+			.catch(function (error) {
+				razorpayScriptPromise = null;
+				throw error;
+			});
+
+		return razorpayScriptPromise;
+	}
+
+	function createRazorpayOrder(orderURL, cartItems) {
+		return postJSON(orderURL, {
+			items: cartItems
+		});
+	}
+
+	function verifyRazorpayPayment(verifyURL, payload) {
+		return postJSON(verifyURL, payload);
+	}
+
+	function openRazorpayCheckout(checkoutData) {
+		return new Promise(function (resolve, reject) {
+			if (!window.Razorpay) {
+				reject(new Error("Razorpay checkout is unavailable."));
+				return;
+			}
+
+			var hasFinished = false;
+			function resolveOnce(value) {
+				if (hasFinished) {
+					return;
+				}
+				hasFinished = true;
+				resolve(value);
+			}
+
+			function rejectOnce(error) {
+				if (hasFinished) {
+					return;
+				}
+				hasFinished = true;
+				reject(error);
+			}
+
+			var options = {
+				key: checkoutData.key_id,
+				amount: checkoutData.amount,
+				currency: checkoutData.currency || "INR",
+				name: checkoutData.name || "Toidel",
+				description: checkoutData.description || "Cart order payment",
+				order_id: checkoutData.order_id,
+				handler: function (response) {
+					resolveOnce({
+						razorpay_order_id: response.razorpay_order_id || "",
+						razorpay_payment_id: response.razorpay_payment_id || "",
+						razorpay_signature: response.razorpay_signature || ""
+					});
+				},
+				modal: {
+					ondismiss: function () {
+						var error = new Error("Payment was cancelled.");
+						error.code = "payment_cancelled";
+						rejectOnce(error);
+					}
+				},
+				theme: {
+					color: "#0f5db8"
+				}
+			};
+
+			var checkout = new window.Razorpay(options);
+			checkout.on("payment.failed", function (event) {
+				var message = sanitizeText(event && event.error && (event.error.description || event.error.reason || event.error.source)) || "Payment failed.";
+				rejectOnce(new Error(message));
+			});
+			checkout.open();
+		});
+	}
+
+	function updatePaymentStatus(statusNode, message, tone) {
+		if (!statusNode) {
+			return;
+		}
+
+		var text = sanitizeText(message);
+		statusNode.classList.remove("is-success");
+		statusNode.classList.remove("is-error");
+
+		if (!text) {
+			statusNode.textContent = "";
+			statusNode.hidden = true;
+			return;
+		}
+
+		statusNode.textContent = text;
+		statusNode.hidden = false;
+		if (tone === "success") {
+			statusNode.classList.add("is-success");
+		} else if (tone === "error") {
+			statusNode.classList.add("is-error");
+		}
+	}
+
 	function showAddedFeedback(button) {
 		var label = button.querySelector(".catalog-action__label");
 		if (!label || label.classList.contains("catalog-action__label--sr")) {
@@ -529,12 +696,43 @@
 
 		var phone = cartPage.getAttribute("data-cart-phone") || "";
 		var prefill = cartPage.getAttribute("data-cart-prefill") || "";
+		var orderURL = cartPage.getAttribute("data-razorpay-order-url") || "/api/razorpay-order";
+		var verifyURL = cartPage.getAttribute("data-razorpay-verify-url") || "/api/razorpay-verify";
 		var cartList = cartPage.querySelector("[data-cart-items]");
 		var emptyState = cartPage.querySelector("[data-cart-empty]");
 		var summary = cartPage.querySelector("[data-cart-summary]");
 		var total = cartPage.querySelector("[data-cart-total]");
 		var whatsappButton = cartPage.querySelector("[data-cart-whatsapp]");
+		var payButton = cartPage.querySelector("[data-cart-pay]");
 		var clearButton = cartPage.querySelector("[data-cart-clear]");
+		var paymentStatus = cartPage.querySelector("[data-cart-payment-status]");
+		var paymentInProgress = false;
+
+		function syncPayButton(cartItems) {
+			if (!payButton) {
+				return;
+			}
+
+			var hasItems = Array.isArray(cartItems) && cartItems.length > 0;
+			var disabled = !hasItems || paymentInProgress;
+			payButton.classList.toggle("is-disabled", disabled);
+			payButton.disabled = disabled;
+			if (disabled) {
+				payButton.setAttribute("aria-disabled", "true");
+			} else {
+				payButton.removeAttribute("aria-disabled");
+			}
+			if (paymentInProgress) {
+				payButton.setAttribute("aria-busy", "true");
+			} else {
+				payButton.removeAttribute("aria-busy");
+			}
+		}
+
+		function setPaymentInProgress(value) {
+			paymentInProgress = !!value;
+			syncPayButton(loadCart());
+		}
 
 		function renderCartPage() {
 			var cartItems = loadCart();
@@ -559,6 +757,7 @@
 				if (summary) {
 					summary.hidden = true;
 				}
+				syncPayButton(cartItems);
 				return;
 			}
 
@@ -611,6 +810,8 @@
 					whatsappButton.removeAttribute("aria-disabled");
 				}
 			}
+
+			syncPayButton(cartItems);
 		}
 
 		cartPage.addEventListener("click", function (event) {
@@ -637,6 +838,55 @@
 				return;
 			}
 
+			var payAction = closestElement(event.target, "[data-cart-pay]");
+			if (payAction && payButton && payAction === payButton) {
+				event.preventDefault();
+
+				if (paymentInProgress) {
+					return;
+				}
+
+				var checkoutItems = loadCart();
+				if (!checkoutItems.length) {
+					renderCartPage();
+					return;
+				}
+
+				setPaymentInProgress(true);
+				updatePaymentStatus(paymentStatus, "Preparing secure checkout...", "");
+
+				ensureRazorpayLoaded()
+					.then(function () {
+						return createRazorpayOrder(orderURL, checkoutItems);
+					})
+					.then(function (checkoutData) {
+						updatePaymentStatus(paymentStatus, "Opening Razorpay checkout...", "");
+						return openRazorpayCheckout(checkoutData);
+					})
+					.then(function (paymentPayload) {
+						updatePaymentStatus(paymentStatus, "Verifying payment...", "");
+						return verifyRazorpayPayment(verifyURL, paymentPayload);
+					})
+					.then(function () {
+						clearCart();
+						updatePaymentStatus(paymentStatus, "Payment successful. Your cart has been cleared.", "success");
+					})
+					.catch(function (error) {
+						if (error && error.code === "payment_cancelled") {
+							updatePaymentStatus(paymentStatus, error.message || "Payment was cancelled.", "");
+							return;
+						}
+
+						updatePaymentStatus(paymentStatus, (error && error.message) || "Unable to complete payment.", "error");
+					})
+					.then(function () {
+						setPaymentInProgress(false);
+						renderCartPage();
+					});
+
+				return;
+			}
+
 			if (!clearButton || event.target !== clearButton) {
 				return;
 			}
@@ -644,6 +894,7 @@
 			event.preventDefault();
 			if (window.confirm("Clear all items from the cart?")) {
 				clearCart();
+				updatePaymentStatus(paymentStatus, "", "");
 				renderCartPage();
 			}
 		});
@@ -661,6 +912,7 @@
 			}
 
 			setCartItemQuantity(itemID, newQuantity);
+			updatePaymentStatus(paymentStatus, "", "");
 			renderCartPage();
 		});
 

@@ -2,10 +2,10 @@
 
 Static Hugo catalog website based on the [CloudCannon Fur Hugo template](https://github.com/CloudCannon/fur-hugo-template).
 
-This version is configured for inquiry-only selling flow:
+This version supports two checkout paths:
 
-- No payment gateway
-- Local cart with WhatsApp checkout message
+- Local cart with WhatsApp order message
+- Optional online payment with Razorpay
 - Product inquiry routed to WhatsApp
 
 ## Quick Configuration
@@ -52,6 +52,26 @@ Each product supports:
 The "Chat on WhatsApp" button is generated automatically per product.
 
 The cart page (`/cart`) lets shoppers review quantities and send a WhatsApp message containing all cart items and total.
+
+## Razorpay Checkout (Optional)
+
+The cart page now also supports direct Razorpay checkout.
+
+Cloudflare Pages environment variables required for Razorpay:
+
+- `RAZORPAY_KEY_ID`
+- `RAZORPAY_KEY_SECRET`
+
+Optional environment variables:
+
+- `RAZORPAY_BRAND_NAME` (default: `Toidel`)
+- `RAZORPAY_CHECKOUT_DESCRIPTION` (default: `Cart order payment`)
+- `RAZORPAY_RECEIPT_PREFIX` (default: `toidel`)
+
+Implemented Pages Functions:
+
+- `/api/razorpay-order` creates an order in Razorpay
+- `/api/razorpay-verify` verifies Razorpay signature after checkout
 
 ## Admin Panel (Self-Hosted, Free)
 

@@ -1,7 +1,7 @@
 {{ define "main" }}
 {{ $phone := .Site.Params.whatsapp_number | default "" }}
 {{ $prefill := .Site.Params.whatsapp_cart_prefill | default "Hi, I would like to place this order:" }}
-<div class="cart-page" data-cart-page data-cart-phone="{{ $phone }}" data-cart-prefill="{{ $prefill }}">
+<div class="cart-page" data-cart-page data-cart-phone="{{ $phone }}" data-cart-prefill="{{ $prefill }}" data-razorpay-order-url="/api/razorpay-order" data-razorpay-verify-url="/api/razorpay-verify">
 	<div class="cart-page__intro">
 		<h3>{{ .Title }}</h3>
 		{{ with .Content }}
@@ -15,9 +15,11 @@
 	<div class="cart-summary" data-cart-summary hidden>
 		<p class="cart-summary__total">Total: <strong data-cart-total>INR 0</strong></p>
 		<div class="cart-summary__actions">
+			<button type="button" class="catalog-action catalog-action--compact catalog-action--pay" data-cart-pay>Pay with Razorpay</button>
 			<a class="catalog-action catalog-action--compact" href="#" data-cart-whatsapp target="_blank" rel="noopener">Send Order on WhatsApp</a>
 			<button type="button" class="cart-clear" data-cart-clear>Clear Cart</button>
 		</div>
 	</div>
+	<p class="cart-payment-status" data-cart-payment-status hidden></p>
 </div>
 {{ end }}

@@ -109,6 +109,13 @@ nav {
 		color: #1f2a3a;
 	}
 
+	.nav-quick-actions {
+		display: inline-flex;
+		align-items: center;
+		gap: 12px;
+		margin: 12px 0 0;
+	}
+
 	a.cart-link {
 		display: inline-flex;
 		align-items: center;
@@ -119,7 +126,7 @@ nav {
 		background: rgba(255, 255, 255, 0.85);
 		border: 1px solid rgba(255, 255, 255, 0.62);
 		box-shadow: 0 10px 22px rgba(24, 70, 63, 0.18);
-		margin: 12px 10px 0 0;
+		margin: 0;
 		padding: 0;
 		position: relative;
 		color: #1f2a3a;
@@ -174,9 +181,9 @@ nav {
 		align-items: center;
 		border: 1px solid rgba(255, 255, 255, 0.48);
 		box-shadow: 0 12px 24px rgba(24, 70, 63, 0.18);
-		margin: 12px 0 0;
+		margin: 0;
 		width: fit-content;
-		max-width: calc(100% - 64px);
+		max-width: calc(100% - 32px);
 
 		.cta-link__badge {
 			width: 38px;
@@ -227,11 +234,14 @@ nav {
 	}
 
 	@media #{$mid-point} {
-		a.cart-link {
+		.nav-quick-actions {
 			position: absolute;
-			right: 214px;
+			right: 20px;
 			top: -8px;
 			margin-top: 0;
+		}
+
+		a.cart-link {
 			transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
 
 			&:hover {
@@ -243,14 +253,10 @@ nav {
 
 		a.cta-link {
 			color: #fff;
-			position: absolute;
-			right: 20px;
-			top: -8px;
 			font-size: 0.9em;
 			transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease, border-color 0.25s ease;
 			display: inline-flex;
 			padding: 7px 16px 7px 8px;
-			margin-top: 0;
 			max-width: none;
 
 			.cta-link__badge {

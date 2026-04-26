@@ -21,6 +21,14 @@
 		</label>
 	</div>
 	<p class="catalog-controls__hint" data-category-hint>Showing all products</p>
+	<div class="catalog-sticky-nav" data-category-nav>
+		<span class="catalog-sticky-nav__label">Products</span>
+		<div class="catalog-tabs" role="tablist" aria-label="Product categories">
+			{{ range $index, $category := $categories }}
+				<button class="catalog-tab{{ if eq $index 0 }} is-active{{ end }}" type="button" data-category-tab data-category-target="catalog-category-{{ $category.key }}">{{ $category.title }}</button>
+			{{ end }}
+		</div>
+	</div>
 	{{ range $categories }}
 		{{ $category := . }}
 		{{ $categoryProducts := slice }}
@@ -33,7 +41,7 @@
 			{{ end }}
 		{{ end }}
 
-		<div class="catalog-category" data-category-group data-default-visible="3">
+		<div class="catalog-category" id="catalog-category-{{ $category.key }}" data-category-group data-category-key="{{ $category.key }}" data-default-visible="3">
 			<div class="catalog-category__head">
 				<h3>{{ $category.title }}</h3>
 				<p>{{ $category.description }}</p>

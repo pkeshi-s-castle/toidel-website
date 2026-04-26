@@ -64,6 +64,7 @@
 		forEachNode(document.querySelectorAll("[data-catalog]"), function (catalog) {
 			var cards = Array.from(catalog.querySelectorAll("[data-product-card]"));
 			var groups = Array.from(catalog.querySelectorAll("[data-category-group]"));
+			var tabs = Array.from(catalog.querySelectorAll("[data-category-tab]"));
 			var search = catalog.querySelector("[data-product-search]");
 			var hint = catalog.querySelector("[data-category-hint]");
 			var empty = catalog.querySelector("[data-catalog-empty]");
@@ -84,6 +85,44 @@
 				}
 
 				hint.textContent = "Showing all products";
+			}
+
+			function setActiveTab(categoryKey) {
+				if (!tabs.length) {
+					return;
+				}
+
+				tabs.forEach(function (tab) {
+					var isActive = tab.getAttribute("data-category-target") === "catalog-category-" + categoryKey;
+					tab.classList.toggle("is-active", isActive);
+					tab.setAttribute("aria-pressed", isActive ? "true" : "false");
+				});
+			}
+
+			function updateActiveTabFromScroll() {
+				if (!tabs.length || !groups.length || searchTerm) {
+					return;
+				}
+
+				var activeGroup = groups[0];
+				var closestOffset = Number.POSITIVE_INFINITY;
+
+				groups.forEach(function (group) {
+					if (group.hidden) {
+						return;
+					}
+
+					var rect = group.getBoundingClientRect();
+					var offset = Math.abs(rect.top - 160);
+					if (offset < closestOffset) {
+						closestOffset = offset;
+						activeGroup = group;
+					}
+				});
+
+				if (activeGroup) {
+					setActiveTab(activeGroup.getAttribute("data-category-key") || "");
+				}
 			}
 
 			function applyFilters() {
@@ -151,23 +190,42 @@
 				});
 
 				updateHint(visibleCount);
+				updateActiveTabFromScroll();
 			}
 
 			catalog.addEventListener("click", function (event) {
 				var toggle = closestElement(event.target, "[data-category-toggle]");
-				if (!toggle) {
+				if (toggle) {
+					event.preventDefault();
+
+					var toggleGroup = closestElement(toggle, "[data-category-group]");
+					if (!toggleGroup) {
+						return;
+					}
+
+					toggleGroup.setAttribute("data-expanded", toggleGroup.getAttribute("data-expanded") === "true" ? "false" : "true");
+					applyFilters();
+					return;
+				}
+
+				var tab = closestElement(event.target, "[data-category-tab]");
+				if (!tab) {
 					return;
 				}
 
 				event.preventDefault();
 
-				var group = closestElement(toggle, "[data-category-group]");
-				if (!group) {
+				var targetId = tab.getAttribute("data-category-target") || "";
+				var targetGroup = targetId ? document.getElementById(targetId) : null;
+				if (!targetGroup || targetGroup.hidden) {
 					return;
 				}
 
-				group.setAttribute("data-expanded", group.getAttribute("data-expanded") === "true" ? "false" : "true");
-				applyFilters();
+				setActiveTab(targetGroup.getAttribute("data-category-key") || "");
+				targetGroup.scrollIntoView({
+					behavior: "smooth",
+					block: "start"
+				});
 			});
 
 			if (search) {
@@ -176,6 +234,8 @@
 					applyFilters();
 				});
 			}
+
+			window.addEventListener("scroll", updateActiveTabFromScroll, { passive: true });
 
 			applyFilters();
 		});

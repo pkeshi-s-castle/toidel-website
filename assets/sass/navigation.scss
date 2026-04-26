@@ -233,31 +233,6 @@ nav {
 		}
 	}
 
-	@media #{$below-mid-point} {
-		.nav-quick-actions {
-			max-width: calc(100% - 88px);
-		}
-
-		a.cart-link {
-			position: fixed;
-			right: 16px;
-			bottom: 16px;
-			z-index: 40;
-			width: 56px;
-			height: 56px;
-			box-shadow: 0 16px 34px rgba(24, 70, 63, 0.24);
-
-			.cart-link__icon {
-				width: 24px;
-				height: 24px;
-			}
-		}
-
-		a.cta-link {
-			max-width: calc(100% - 88px);
-		}
-	}
-
 	@media #{$mid-point} {
 		.nav-quick-actions {
 			position: absolute;
@@ -314,11 +289,5 @@ nav {
 	a.active {
 		color: #1f2a3a;
 		border-bottom-color: rgba(31, 42, 58, 0.45);
-	}
-}
-
-@media #{$below-mid-point} {
-	body {
-		padding-bottom: 108px;
 	}
 }

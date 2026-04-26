@@ -377,10 +377,23 @@
 }
 
 .cart-summary__actions {
-	display: flex;
-	flex-wrap: wrap;
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
 	gap: 10px;
+}
+
+.cart-summary__actions > * {
+	width: 100%;
+	min-height: 48px;
+	justify-content: center;
+	box-sizing: border-box;
+}
+
+.cart-summary__actions .cart-clear {
+	display: inline-flex;
 	align-items: center;
+	justify-content: center;
+	padding: 12px 20px;
 }
 
 .cart-payment-status {
@@ -419,5 +432,9 @@
 
 	.cart-item__remove {
 		width: fit-content;
+	}
+
+	.cart-summary__actions {
+		grid-template-columns: minmax(0, 1fr);
 	}
 }

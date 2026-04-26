@@ -33,7 +33,7 @@
 			{{ end }}
 		{{ end }}
 
-		<div class="catalog-category" data-category-group>
+		<div class="catalog-category" data-category-group data-default-visible="3">
 			<div class="catalog-category__head">
 				<h3>{{ $category.title }}</h3>
 				<p>{{ $category.description }}</p>
@@ -67,6 +67,9 @@
 					</li>
 				{{ end }}
 			</ul>
+			{{ if gt (len $categoryProducts) 3 }}
+				<button class="catalog-more-button" type="button" data-category-toggle aria-expanded="false">Show more</button>
+			{{ end }}
 			<p class="catalog-empty" data-category-empty {{ if gt (len $categoryProducts) 0 }}hidden{{ end }}>No products in this category yet.</p>
 		</div>
 	{{ end }}

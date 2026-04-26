@@ -92,12 +92,11 @@
 				cards.forEach(function (card) {
 					var searchValue = String(card.getAttribute("data-search") || "").toLowerCase();
 					var matchesSearch = !searchTerm || searchValue.indexOf(searchTerm) !== -1;
-					var isVisible = matchesSearch;
 
-					card.hidden = !isVisible;
-					card.style.display = isVisible ? "" : "none";
+					card.hidden = !matchesSearch;
+					card.style.display = matchesSearch ? "" : "none";
 
-					if (isVisible) {
+					if (matchesSearch) {
 						visibleCount += 1;
 					}
 				});
@@ -108,17 +107,37 @@
 
 				groups.forEach(function (group) {
 					var groupCards = Array.from(group.querySelectorAll("[data-product-card]"));
-					var groupVisibleCount = 0;
+					var groupVisibleCards = groupCards.filter(function (card) {
+						return !card.hidden;
+					});
+					var groupVisibleCount = groupVisibleCards.length;
+					var toggle = group.querySelector("[data-category-toggle]");
+					var defaultVisible = toInteger(group.getAttribute("data-default-visible"), 3);
+					var isExpanded = group.getAttribute("data-expanded") === "true";
+					var visibleLimit = searchTerm ? groupVisibleCount : (isExpanded ? groupVisibleCount : defaultVisible);
 
 					groupCards.forEach(function (card) {
-						if (!card.hidden) {
-							groupVisibleCount += 1;
+						if (card.hidden) {
+							card.style.display = "none";
+							return;
 						}
+
+						var cardIndex = groupVisibleCards.indexOf(card);
+						var shouldShowCard = cardIndex > -1 && cardIndex < visibleLimit;
+						card.hidden = !shouldShowCard;
+						card.style.display = shouldShowCard ? "" : "none";
 					});
 
 					var groupEmpty = group.querySelector("[data-category-empty]");
 					if (groupEmpty) {
 						groupEmpty.hidden = groupVisibleCount !== 0;
+					}
+
+					if (toggle) {
+						var canExpand = !searchTerm && groupVisibleCount > defaultVisible;
+						toggle.hidden = !canExpand;
+						toggle.setAttribute("aria-expanded", canExpand && isExpanded ? "true" : "false");
+						toggle.textContent = canExpand && !isExpanded ? "Show " + (groupVisibleCount - defaultVisible) + " more" : "Show less";
 					}
 
 					if (searchTerm) {
@@ -133,6 +152,23 @@
 
 				updateHint(visibleCount);
 			}
+
+			catalog.addEventListener("click", function (event) {
+				var toggle = closestElement(event.target, "[data-category-toggle]");
+				if (!toggle) {
+					return;
+				}
+
+				event.preventDefault();
+
+				var group = closestElement(toggle, "[data-category-group]");
+				if (!group) {
+					return;
+				}
+
+				group.setAttribute("data-expanded", group.getAttribute("data-expanded") === "true" ? "false" : "true");
+				applyFilters();
+			});
 
 			if (search) {
 				search.addEventListener("input", function () {

@@ -35,6 +35,7 @@ collections:
           - { label: "Water Tumblers & Sippers", value: "water-tumblers-sippers" }
           - { label: "Games & Toys", value: "games-toys" }
           - { label: "Gifting Items", value: "gifting-items" }
+          - { label: "Home Essentials", value: "home-essentials" }
       - { label: "Price (INR)", name: "price", widget: "number", required: false, value_type: "int", min: 0 }
       - { label: "Description", name: "description", widget: "markdown", required: false }
       - label: "Pictures"

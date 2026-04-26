@@ -548,6 +548,14 @@
 				if (emptyState) {
 					emptyState.hidden = false;
 				}
+				if (total) {
+					total.textContent = formatCurrency(0);
+				}
+				if (whatsappButton) {
+					whatsappButton.href = "#";
+					whatsappButton.classList.add("is-disabled");
+					whatsappButton.setAttribute("aria-disabled", "true");
+				}
 				if (summary) {
 					summary.hidden = true;
 				}

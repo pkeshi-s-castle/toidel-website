@@ -1,5 +1,5 @@
 ---
-name: Inflatable Rectangular Pool 10 Feet
+name: Inflatable Rectangular Pool (10 Feet)
 category: games-toys
 price: 3999
 description: Create endless summer fun for your little ones with this adorable

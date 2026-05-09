@@ -1,5 +1,5 @@
 ---
-name: 4 IN 1 TRAVEL BOTTLE
+name: 4 In 1 Travel Bottle
 category: home-essentials
 price: 150
 description: This portable travel bottle set is perfect for organizing and

@@ -1,5 +1,5 @@
 ---
-name: CAT PRINT DOOR MAT
+name: 5D Print Door Mat
 category: home-essentials
 price: 250
 description: Bring warmth, comfort, and playful style to your living space with

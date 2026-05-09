@@ -1,5 +1,5 @@
 ---
-name: J2 DRONE
+name: J2 Drone
 category: games-toys
 price: 1999
 description: This HD dual-camera drone features front and bottom cameras that

@@ -11,4 +11,8 @@ description: Enjoy your favourite beverages at the perfect temperature with this
   travel, and outdoor use. Made from durable food-grade stainless steel, the mug
   is rust-resistant, reusable, easy to clean, and designed for long-lasting
   performance with a sleek modern look.
+pictures:
+  - /images/products/of9_n43l8qdmgexo2k_.jpg
+  - /images/products/of9_sxlsg-xxwxbdyys.jpg
+  - /images/products/of9_sxmvlllvca4g9qq.jpg
 ---

@@ -1,6 +1,6 @@
 ---
 name: Facial Ice Bowl
-category: gifting-items
+category: home-essentials
 price: 179
 description: Enjoy convenient washing anywhere with this portable foldable wash
   basin, designed for both home and travel use. Its compact collapsible design

@@ -1,7 +1,7 @@
 ---
 name: Kuromi Stainless Steel Tumbler Gift Pack
 category: gifting-items
-price: 899
+price: 799
 description: >-
   A super trendy, ready-to-gift tumbler that’s perfect for your loved ones 🎁  
 

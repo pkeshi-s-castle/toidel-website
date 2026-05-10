@@ -1,6 +1,6 @@
 ---
 name: Dino Stainless Steel Lunch Box- BPA Free & Leak- Proof
-category: gifting-items
+category: home-essentials
 price: 649
 description: Featuring an adorable Dino cartoon design with large, expressive
   eyes, this lunch box adds a fun and engaging touch to kids’ mealtime. The

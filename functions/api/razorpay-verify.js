@@ -1,80 +1,24 @@
-function jsonResponse(status, payload) {
-	return new Response(JSON.stringify(payload), {
-		status,
-		headers: {
-			"Content-Type": "application/json; charset=utf-8",
-			"Cache-Control": "no-store",
-		},
-	});
-}
-
-function methodNotAllowed() {
-	return new Response("Method Not Allowed", {
-		status: 405,
-		headers: {
-			Allow: "POST",
-			"Cache-Control": "no-store",
-		},
-	});
-}
-
-function requiredEnv(env, key) {
-	const value = env[key];
-	if (!value) {
-		throw new Error(`Missing required environment variable: ${key}`);
-	}
-	return value;
-}
-
-function sanitizeText(value) {
-	return String(value || "").replace(/\s+/g, " ").trim();
-}
-
-function parseJSONBody(request) {
-	return request
-		.json()
-		.catch(() => null);
-}
-
-function timingSafeEqual(left, right) {
-	if (typeof left !== "string" || typeof right !== "string" || left.length !== right.length) {
-		return false;
-	}
-
-	let mismatch = 0;
-	for (let index = 0; index < left.length; index += 1) {
-		mismatch |= left.charCodeAt(index) ^ right.charCodeAt(index);
-	}
-	return mismatch === 0;
-}
-
-async function hmacSHA256Hex(message, secret) {
-	const textEncoder = new TextEncoder();
-	const keyData = textEncoder.encode(secret);
-	const messageData = textEncoder.encode(message);
-
-	const cryptoKey = await crypto.subtle.importKey(
-		"raw",
-		keyData,
-		{ name: "HMAC", hash: "SHA-256" },
-		false,
-		["sign"],
-	);
-
-	const signatureBuffer = await crypto.subtle.sign("HMAC", cryptoKey, messageData);
-	const signatureBytes = new Uint8Array(signatureBuffer);
-
-	return Array.from(signatureBytes, (value) => value.toString(16).padStart(2, "0")).join("");
-}
+import {
+	fetchOrderByRazorpayOrderID,
+	hmacSHA256Hex,
+	jsonResponse,
+	methodNotAllowed,
+	parseJSONText,
+	requiredD1,
+	requiredEnv,
+	sanitizeText,
+	timingSafeEqual,
+	upsertOrderPaymentStatus,
+} from "./_lib/payment-store.js";
 
 export async function onRequest(context) {
 	try {
 		const { request, env } = context;
 		if (request.method !== "POST") {
-			return methodNotAllowed();
+			return methodNotAllowed("POST");
 		}
 
-		const payload = await parseJSONBody(request);
+		const payload = parseJSONText(await request.text());
 		if (!payload || typeof payload !== "object") {
 			return jsonResponse(400, { error: "Invalid JSON payload." });
 		}
@@ -93,10 +37,20 @@ export async function onRequest(context) {
 			return jsonResponse(400, { error: "Invalid Razorpay signature." });
 		}
 
+		const database = requiredD1(env);
+		await upsertOrderPaymentStatus(database, {
+			status: "paid",
+			razorpayOrderID: orderID,
+			paymentID,
+		});
+
+		const orderRecord = await fetchOrderByRazorpayOrderID(database, orderID);
+
 		return jsonResponse(200, {
 			ok: true,
 			order_id: orderID,
 			payment_id: paymentID,
+			local_order_id: orderRecord?.id || "",
 			status: "verified",
 		});
 	} catch (error) {

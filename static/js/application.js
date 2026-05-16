@@ -541,9 +541,11 @@
 		return razorpayScriptPromise;
 	}
 
-	function createRazorpayOrder(orderURL, cartItems) {
+	function createRazorpayOrder(orderURL, cartItems, checkoutDetails) {
 		return postJSON(orderURL, {
-			items: cartItems
+			items: cartItems,
+			customer: checkoutDetails.customer,
+			shipping: checkoutDetails.shipping
 		});
 	}
 
@@ -632,6 +634,106 @@
 		} else if (tone === "error") {
 			statusNode.classList.add("is-error");
 		}
+	}
+
+	function isValidCheckoutEmail(value) {
+		var email = sanitizeText(value).toLowerCase();
+		if (!email) {
+			return true;
+		}
+
+		return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+	}
+
+	function normalizeCheckoutPhone(value) {
+		var compact = sanitizeText(value).replace(/[^\d+]/g, "");
+		if (!compact) {
+			return "";
+		}
+
+		var startsWithPlus = compact.charAt(0) === "+";
+		var digits = compact.replace(/\D/g, "");
+		if (digits.length < 8 || digits.length > 15) {
+			return "";
+		}
+
+		return startsWithPlus ? "+" + digits : digits;
+	}
+
+	function collectCheckoutDetails(cartPage) {
+		var fields = {
+			name: cartPage.querySelector("[data-checkout-name]"),
+			phone: cartPage.querySelector("[data-checkout-phone]"),
+			email: cartPage.querySelector("[data-checkout-email]"),
+			addressLine1: cartPage.querySelector("[data-checkout-address-line1]"),
+			addressLine2: cartPage.querySelector("[data-checkout-address-line2]"),
+			city: cartPage.querySelector("[data-checkout-city]"),
+			state: cartPage.querySelector("[data-checkout-state]"),
+			pincode: cartPage.querySelector("[data-checkout-pincode]"),
+			country: cartPage.querySelector("[data-checkout-country]")
+		};
+
+		var data = {
+			customer: {
+				name: sanitizeText(fields.name && fields.name.value),
+				phone: sanitizeText(fields.phone && fields.phone.value),
+				email: sanitizeText(fields.email && fields.email.value).toLowerCase()
+			},
+			shipping: {
+				address_line1: sanitizeText(fields.addressLine1 && fields.addressLine1.value),
+				address_line2: sanitizeText(fields.addressLine2 && fields.addressLine2.value),
+				city: sanitizeText(fields.city && fields.city.value),
+				state: sanitizeText(fields.state && fields.state.value),
+				pincode: sanitizeText(fields.pincode && fields.pincode.value),
+				country: sanitizeText(fields.country && fields.country.value) || "India"
+			}
+		};
+
+		return {
+			fields: fields,
+			data: data
+		};
+	}
+
+	function validateCheckoutDetails(checkout) {
+		var data = checkout.data;
+		var fields = checkout.fields;
+
+		if (!data.customer.name) {
+			return { message: "Please enter the customer's full name.", field: fields.name };
+		}
+
+		var normalizedPhone = normalizeCheckoutPhone(data.customer.phone);
+		if (!normalizedPhone) {
+			return { message: "Please enter a valid phone number.", field: fields.phone };
+		}
+		data.customer.phone = normalizedPhone;
+
+		if (!isValidCheckoutEmail(data.customer.email)) {
+			return { message: "Please enter a valid email address.", field: fields.email };
+		}
+
+		if (!data.shipping.address_line1) {
+			return { message: "Please enter address line 1.", field: fields.addressLine1 };
+		}
+
+		if (!data.shipping.city) {
+			return { message: "Please enter the city.", field: fields.city };
+		}
+
+		if (!data.shipping.state) {
+			return { message: "Please enter the state.", field: fields.state };
+		}
+
+		if (!data.shipping.pincode) {
+			return { message: "Please enter the pincode.", field: fields.pincode };
+		}
+
+		if (!data.shipping.country) {
+			return { message: "Please enter the country.", field: fields.country };
+		}
+
+		return null;
 	}
 
 	function showAddedFeedback(button) {
@@ -852,12 +954,22 @@
 					return;
 				}
 
+				var checkout = collectCheckoutDetails(cartPage);
+				var validationError = validateCheckoutDetails(checkout);
+				if (validationError) {
+					updatePaymentStatus(paymentStatus, validationError.message, "error");
+					if (validationError.field && typeof validationError.field.focus === "function") {
+						validationError.field.focus();
+					}
+					return;
+				}
+
 				setPaymentInProgress(true);
 				updatePaymentStatus(paymentStatus, "Preparing secure checkout...", "");
 
 				ensureRazorpayLoaded()
 					.then(function () {
-						return createRazorpayOrder(orderURL, checkoutItems);
+						return createRazorpayOrder(orderURL, checkoutItems, checkout.data);
 					})
 					.then(function (checkoutData) {
 						updatePaymentStatus(paymentStatus, "Opening Razorpay checkout...", "");

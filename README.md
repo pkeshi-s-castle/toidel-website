@@ -55,12 +55,14 @@ The cart page (`/cart`) lets shoppers review quantities and send a WhatsApp mess
 
 ## Razorpay Checkout (Optional)
 
-The cart page now also supports direct Razorpay checkout.
+The cart page supports direct Razorpay checkout with D1 order persistence.
 
 Cloudflare Pages environment variables required for Razorpay:
 
 - `RAZORPAY_KEY_ID`
 - `RAZORPAY_KEY_SECRET`
+- `RAZORPAY_WEBHOOK_SECRET`
+- `DB` (D1 binding)
 
 Optional environment variables:
 
@@ -71,7 +73,31 @@ Optional environment variables:
 Implemented Pages Functions:
 
 - `/api/razorpay-order` creates an order in Razorpay
-- `/api/razorpay-verify` verifies Razorpay signature after checkout
+- `/api/razorpay-verify` verifies Razorpay signature after checkout and updates order status
+- `/api/razorpay-webhook` validates Razorpay webhooks and idempotently updates order status
+
+### D1 Setup
+
+1. Create a D1 database in Cloudflare.
+2. Bind it to this Pages project as `DB` (Preview + Production).
+3. Apply the schema from `/Users/prakash/github.com/pkeshi-s-castle/toidel-website/migrations/0001_orders.sql`.
+
+Example with Wrangler:
+
+```bash
+wrangler d1 execute <YOUR_DB_NAME> --remote --file=./migrations/0001_orders.sql
+```
+
+### Razorpay Webhook Setup
+
+1. In Razorpay Dashboard, configure webhook URL:
+   - `https://<your-domain>/api/razorpay-webhook`
+2. Use the same secret in Razorpay and `RAZORPAY_WEBHOOK_SECRET`.
+3. Subscribe at minimum to:
+   - `payment.captured`
+   - `order.paid`
+   - `payment.failed`
+   - `payment.refunded`
 
 ## Admin Panel (Self-Hosted, Free)
 

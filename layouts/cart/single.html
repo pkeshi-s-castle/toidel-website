@@ -14,6 +14,48 @@
 
 	<div class="cart-summary" data-cart-summary hidden>
 		<p class="cart-summary__total">Total: <strong data-cart-total>INR 0</strong></p>
+		<div class="cart-checkout" data-cart-checkout>
+			<h4>Delivery Details</h4>
+			<p>Please enter shipping and contact information before payment.</p>
+			<div class="cart-checkout__grid">
+				<div class="cart-checkout__field">
+					<label for="checkout-name">Full Name</label>
+					<input id="checkout-name" type="text" data-checkout-name autocomplete="name" maxlength="120" required>
+				</div>
+				<div class="cart-checkout__field">
+					<label for="checkout-phone">Phone Number</label>
+					<input id="checkout-phone" type="tel" data-checkout-phone autocomplete="tel" maxlength="20" required>
+				</div>
+				<div class="cart-checkout__field">
+					<label for="checkout-email">Email (Optional)</label>
+					<input id="checkout-email" type="email" data-checkout-email autocomplete="email" maxlength="254">
+				</div>
+				<div class="cart-checkout__field cart-checkout__field--span-2">
+					<label for="checkout-address-line1">Address Line 1</label>
+					<input id="checkout-address-line1" type="text" data-checkout-address-line1 autocomplete="address-line1" maxlength="240" required>
+				</div>
+				<div class="cart-checkout__field cart-checkout__field--span-2">
+					<label for="checkout-address-line2">Address Line 2 (Optional)</label>
+					<input id="checkout-address-line2" type="text" data-checkout-address-line2 autocomplete="address-line2" maxlength="240">
+				</div>
+				<div class="cart-checkout__field">
+					<label for="checkout-city">City</label>
+					<input id="checkout-city" type="text" data-checkout-city autocomplete="address-level2" maxlength="120" required>
+				</div>
+				<div class="cart-checkout__field">
+					<label for="checkout-state">State</label>
+					<input id="checkout-state" type="text" data-checkout-state autocomplete="address-level1" maxlength="120" required>
+				</div>
+				<div class="cart-checkout__field">
+					<label for="checkout-pincode">Pincode</label>
+					<input id="checkout-pincode" type="text" data-checkout-pincode autocomplete="postal-code" maxlength="20" required>
+				</div>
+				<div class="cart-checkout__field">
+					<label for="checkout-country">Country</label>
+					<input id="checkout-country" type="text" data-checkout-country autocomplete="country-name" maxlength="120" value="India" required>
+				</div>
+			</div>
+		</div>
 		<div class="cart-summary__actions">
 			<button type="button" class="catalog-action catalog-action--compact catalog-action--pay" data-cart-pay>
 				<span class="catalog-action__icon" aria-hidden="true">

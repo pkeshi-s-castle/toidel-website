@@ -836,7 +836,14 @@
 		var clearButton = cartPage.querySelector("[data-cart-clear]");
 		var paymentStatus = cartPage.querySelector("[data-cart-payment-status]");
 		var orderSuccess = cartPage.querySelector("[data-cart-order-success]");
+		var newOrderButton = cartPage.querySelector("[data-cart-new-order]");
 		var paymentInProgress = false;
+		var orderCompleted = false;
+
+		function setOrderCompleted(value) {
+			orderCompleted = !!value;
+			cartPage.classList.toggle("is-order-complete", orderCompleted);
+		}
 
 		function syncPayButton(cartItems) {
 			if (!payButton) {
@@ -844,7 +851,7 @@
 			}
 
 			var hasItems = Array.isArray(cartItems) && cartItems.length > 0;
-			var disabled = !hasItems || paymentInProgress;
+			var disabled = !hasItems || paymentInProgress || orderCompleted;
 			payButton.classList.toggle("is-disabled", disabled);
 			payButton.disabled = disabled;
 			if (disabled) {
@@ -887,6 +894,8 @@
 				if (summary) {
 					summary.hidden = true;
 				}
+
+				setOrderCompleted(false);
 				updateOrderSuccess(orderSuccess, null);
 				syncPayButton(cartItems);
 				return;
@@ -900,6 +909,7 @@
 						var escapedName = escapeHTML(item.name);
 						var escapedURL = escapeHTML(item.url);
 						var lineTotal = item.quantity * item.price;
+						var controlDisabled = orderCompleted ? ' disabled aria-disabled="true"' : "";
 
 						return '<li class="cart-item">' +
 							'<div class="cart-item__info">' +
@@ -907,12 +917,12 @@
 								'<p class="cart-item__price">' + formatCurrency(item.price) + ' each</p>' +
 							'</div>' +
 							'<div class="cart-item__qty">' +
-								'<button type="button" class="cart-qty-button" data-cart-decrement data-cart-item-id="' + escapedID + '" aria-label="Decrease quantity">-</button>' +
-								'<input type="number" min="1" step="1" class="cart-qty-input" value="' + item.quantity + '" data-cart-quantity data-cart-item-id="' + escapedID + '" aria-label="Item quantity" />' +
-								'<button type="button" class="cart-qty-button" data-cart-increment data-cart-item-id="' + escapedID + '" aria-label="Increase quantity">+</button>' +
+								'<button type="button" class="cart-qty-button" data-cart-decrement data-cart-item-id="' + escapedID + '" aria-label="Decrease quantity"' + controlDisabled + '>-</button>' +
+								'<input type="number" min="1" step="1" class="cart-qty-input" value="' + item.quantity + '" data-cart-quantity data-cart-item-id="' + escapedID + '" aria-label="Item quantity"' + controlDisabled + ' />' +
+								'<button type="button" class="cart-qty-button" data-cart-increment data-cart-item-id="' + escapedID + '" aria-label="Increase quantity"' + controlDisabled + '>+</button>' +
 							'</div>' +
 							'<p class="cart-item__line-total">' + formatCurrency(lineTotal) + '</p>' +
-							'<button type="button" class="cart-item__remove" data-cart-remove data-cart-item-id="' + escapedID + '">Remove</button>' +
+							'<button type="button" class="cart-item__remove" data-cart-remove data-cart-item-id="' + escapedID + '"' + controlDisabled + '>Remove</button>' +
 						'</li>';
 					})
 					.join("");
@@ -931,9 +941,9 @@
 			}
 
 			if (whatsappButton) {
-				var orderURL = buildWhatsAppOrderURL(phone, prefill, cartItems);
-				whatsappButton.href = orderURL;
-				var disabled = orderURL === "#";
+				var orderMessageURL = buildWhatsAppOrderURL(phone, prefill, cartItems);
+				whatsappButton.href = orderMessageURL;
+				var disabled = orderMessageURL === "#";
 				whatsappButton.classList.toggle("is-disabled", disabled);
 				if (disabled) {
 					whatsappButton.setAttribute("aria-disabled", "true");
@@ -948,6 +958,10 @@
 		cartPage.addEventListener("click", function (event) {
 			var actionButton = closestElement(event.target, "[data-cart-increment], [data-cart-decrement], [data-cart-remove]");
 			if (actionButton) {
+				if (orderCompleted) {
+					return;
+				}
+
 				event.preventDefault();
 				var itemID = actionButton.getAttribute("data-cart-item-id") || "";
 				var cartItems = loadCart();
@@ -965,6 +979,7 @@
 					setCartItemQuantity(itemID, 0);
 				}
 
+				setOrderCompleted(false);
 				updateOrderSuccess(orderSuccess, null);
 				renderCartPage();
 				return;
@@ -974,7 +989,7 @@
 			if (payAction && payButton && payAction === payButton) {
 				event.preventDefault();
 
-				if (paymentInProgress) {
+				if (paymentInProgress || orderCompleted) {
 					return;
 				}
 
@@ -1012,6 +1027,7 @@
 					})
 					.then(function (verificationResult) {
 						updatePaymentStatus(paymentStatus, "Payment successful. Order is confirmed.", "success");
+						setOrderCompleted(true);
 						updateOrderSuccess(orderSuccess, verificationResult);
 					})
 					.catch(function (error) {
@@ -1030,6 +1046,16 @@
 				return;
 			}
 
+			var newOrderAction = closestElement(event.target, "[data-cart-new-order]");
+			if (newOrderAction && newOrderButton && newOrderAction === newOrderButton) {
+				event.preventDefault();
+				setOrderCompleted(false);
+				updateOrderSuccess(orderSuccess, null);
+				updatePaymentStatus(paymentStatus, "", "");
+				renderCartPage();
+				return;
+			}
+
 			if (!clearButton || event.target !== clearButton) {
 				return;
 			}
@@ -1037,6 +1063,7 @@
 			event.preventDefault();
 			if (window.confirm("Clear all items from the cart?")) {
 				clearCart();
+				setOrderCompleted(false);
 				updatePaymentStatus(paymentStatus, "", "");
 				updateOrderSuccess(orderSuccess, null);
 				renderCartPage();
@@ -1044,6 +1071,10 @@
 		});
 
 		cartPage.addEventListener("change", function (event) {
+			if (orderCompleted) {
+				return;
+			}
+
 			var quantityInput = closestElement(event.target, "[data-cart-quantity]");
 			if (!quantityInput) {
 				return;
@@ -1056,6 +1087,7 @@
 			}
 
 			setCartItemQuantity(itemID, newQuantity);
+			setOrderCompleted(false);
 			updatePaymentStatus(paymentStatus, "", "");
 			updateOrderSuccess(orderSuccess, null);
 			renderCartPage();

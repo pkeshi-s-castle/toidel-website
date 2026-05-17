@@ -92,9 +92,14 @@
 			<li><strong>Razorpay Order ID:</strong> <span data-success-razorpay-order-id>-</span></li>
 			<li><strong>Razorpay Payment ID:</strong> <span data-success-razorpay-payment-id>-</span></li>
 		</ul>
-		<a class="catalog-action catalog-action--compact" href="{{ "/" | relURL }}">
-			<span class="catalog-action__label">Continue Shopping</span>
-		</a>
+		<div class="cart-order-success__actions">
+			<button type="button" class="catalog-action catalog-action--compact" data-cart-new-order>
+				<span class="catalog-action__label">Start New Order</span>
+			</button>
+			<a class="catalog-action catalog-action--compact" href="{{ "/" | relURL }}">
+				<span class="catalog-action__label">Continue Shopping</span>
+			</a>
+		</div>
 	</div>
 </div>
 {{ end }}

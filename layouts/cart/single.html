@@ -84,5 +84,17 @@
 		</div>
 	</div>
 	<p class="cart-payment-status" data-cart-payment-status hidden></p>
+	<div class="cart-order-success" data-cart-order-success hidden>
+		<h4>Order Confirmed</h4>
+		<p>Your payment was successful. Save these references for support queries:</p>
+		<ul>
+			<li><strong>Order Ref:</strong> <span data-success-local-order-id>-</span></li>
+			<li><strong>Razorpay Order ID:</strong> <span data-success-razorpay-order-id>-</span></li>
+			<li><strong>Razorpay Payment ID:</strong> <span data-success-razorpay-payment-id>-</span></li>
+		</ul>
+		<a class="catalog-action catalog-action--compact" href="{{ "/" | relURL }}">
+			<span class="catalog-action__label">Continue Shopping</span>
+		</a>
+	</div>
 </div>
 {{ end }}

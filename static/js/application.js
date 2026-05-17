@@ -636,6 +636,33 @@
 		}
 	}
 
+	function updateOrderSuccess(successNode, details) {
+		if (!successNode) {
+			return;
+		}
+
+		if (!details || typeof details !== "object") {
+			successNode.hidden = true;
+			return;
+		}
+
+		var localOrderNode = successNode.querySelector("[data-success-local-order-id]");
+		var razorpayOrderNode = successNode.querySelector("[data-success-razorpay-order-id]");
+		var razorpayPaymentNode = successNode.querySelector("[data-success-razorpay-payment-id]");
+
+		if (localOrderNode) {
+			localOrderNode.textContent = sanitizeText(details.local_order_id) || "-";
+		}
+		if (razorpayOrderNode) {
+			razorpayOrderNode.textContent = sanitizeText(details.order_id) || "-";
+		}
+		if (razorpayPaymentNode) {
+			razorpayPaymentNode.textContent = sanitizeText(details.payment_id) || "-";
+		}
+
+		successNode.hidden = false;
+	}
+
 	function isValidCheckoutEmail(value) {
 		var email = sanitizeText(value).toLowerCase();
 		if (!email) {
@@ -808,6 +835,7 @@
 		var payButton = cartPage.querySelector("[data-cart-pay]");
 		var clearButton = cartPage.querySelector("[data-cart-clear]");
 		var paymentStatus = cartPage.querySelector("[data-cart-payment-status]");
+		var orderSuccess = cartPage.querySelector("[data-cart-order-success]");
 		var paymentInProgress = false;
 
 		function syncPayButton(cartItems) {
@@ -859,6 +887,7 @@
 				if (summary) {
 					summary.hidden = true;
 				}
+				updateOrderSuccess(orderSuccess, null);
 				syncPayButton(cartItems);
 				return;
 			}
@@ -936,6 +965,7 @@
 					setCartItemQuantity(itemID, 0);
 				}
 
+				updateOrderSuccess(orderSuccess, null);
 				renderCartPage();
 				return;
 			}
@@ -966,6 +996,7 @@
 
 				setPaymentInProgress(true);
 				updatePaymentStatus(paymentStatus, "Preparing secure checkout...", "");
+				updateOrderSuccess(orderSuccess, null);
 
 				ensureRazorpayLoaded()
 					.then(function () {
@@ -979,9 +1010,9 @@
 						updatePaymentStatus(paymentStatus, "Verifying payment...", "");
 						return verifyRazorpayPayment(verifyURL, paymentPayload);
 					})
-					.then(function () {
-						clearCart();
-						updatePaymentStatus(paymentStatus, "Payment successful. Your cart has been cleared.", "success");
+					.then(function (verificationResult) {
+						updatePaymentStatus(paymentStatus, "Payment successful. Order is confirmed.", "success");
+						updateOrderSuccess(orderSuccess, verificationResult);
 					})
 					.catch(function (error) {
 						if (error && error.code === "payment_cancelled") {
@@ -1007,6 +1038,7 @@
 			if (window.confirm("Clear all items from the cart?")) {
 				clearCart();
 				updatePaymentStatus(paymentStatus, "", "");
+				updateOrderSuccess(orderSuccess, null);
 				renderCartPage();
 			}
 		});
@@ -1025,6 +1057,7 @@
 
 			setCartItemQuantity(itemID, newQuantity);
 			updatePaymentStatus(paymentStatus, "", "");
+			updateOrderSuccess(orderSuccess, null);
 			renderCartPage();
 		});
 

@@ -1,6 +1,7 @@
 (function () {
 	"use strict";
 	var CART_STORAGE_KEY = "toidel.cart.v1";
+	var DEFAULT_SHIPPING_CHARGE_RUPEES = 100;
 	var currencyFormatter = null;
 	var razorpayScriptPromise = null;
 	var elementMatches = Element.prototype.matches || Element.prototype.msMatchesSelector || Element.prototype.webkitMatchesSelector;
@@ -342,6 +343,15 @@
 		}, 0);
 	}
 
+	function calculateCartGrandTotal(items, shippingChargeRupees) {
+		var subtotal = calculateCartTotal(items);
+		var shippingCharge = toPrice(shippingChargeRupees);
+		if (subtotal <= 0) {
+			return 0;
+		}
+		return subtotal + shippingCharge;
+	}
+
 	function formatCurrency(amount) {
 		if (!currencyFormatter && typeof Intl !== "undefined" && Intl.NumberFormat) {
 			currencyFormatter = new Intl.NumberFormat("en-IN", {
@@ -441,9 +451,12 @@
 		});
 	}
 
-	function buildCartMessage(items, prefill) {
+	function buildCartMessage(items, prefill, shippingChargeRupees) {
 		var heading = sanitizeText(prefill) || "Hi, I would like to place this order:";
 		var lines = [heading, "", "Order details:"];
+		var subtotal = calculateCartTotal(items);
+		var shippingCharge = subtotal > 0 ? toPrice(shippingChargeRupees) : 0;
+		var total = subtotal + shippingCharge;
 
 		items.forEach(function (item, index) {
 			var lineTotal = item.quantity * item.price;
@@ -451,20 +464,22 @@
 		});
 
 		lines.push("");
-		lines.push("Total: " + formatCurrency(calculateCartTotal(items)));
+		lines.push("Subtotal: " + formatCurrency(subtotal));
+		lines.push("Shipping: " + formatCurrency(shippingCharge));
+		lines.push("Total: " + formatCurrency(total));
 		lines.push("");
 		lines.push("Please confirm availability and delivery details.");
 
 		return lines.join("\n");
 	}
 
-	function buildWhatsAppOrderURL(phone, prefill, items) {
+	function buildWhatsAppOrderURL(phone, prefill, items, shippingChargeRupees) {
 		var normalizedPhone = String(phone || "").replace(/[^\d]/g, "");
 		if (!normalizedPhone || !items.length) {
 			return "#";
 		}
 
-		var message = buildCartMessage(items, prefill);
+		var message = buildCartMessage(items, prefill, shippingChargeRupees);
 		return "https://wa.me/" + normalizedPhone + "?text=" + encodeURIComponent(message);
 	}
 
@@ -827,9 +842,15 @@
 		var prefill = cartPage.getAttribute("data-cart-prefill") || "";
 		var orderURL = cartPage.getAttribute("data-razorpay-order-url") || "/api/razorpay-order";
 		var verifyURL = cartPage.getAttribute("data-razorpay-verify-url") || "/api/razorpay-verify";
+		var shippingChargeRupees = toPrice(cartPage.getAttribute("data-cart-shipping-charge"));
+		if (shippingChargeRupees <= 0) {
+			shippingChargeRupees = DEFAULT_SHIPPING_CHARGE_RUPEES;
+		}
 		var cartList = cartPage.querySelector("[data-cart-items]");
 		var emptyState = cartPage.querySelector("[data-cart-empty]");
 		var summary = cartPage.querySelector("[data-cart-summary]");
+		var subtotalNode = cartPage.querySelector("[data-cart-subtotal]");
+		var shippingNode = cartPage.querySelector("[data-cart-shipping]");
 		var total = cartPage.querySelector("[data-cart-total]");
 		var whatsappButton = cartPage.querySelector("[data-cart-whatsapp]");
 		var payButton = cartPage.querySelector("[data-cart-pay]");
@@ -886,6 +907,12 @@
 				if (total) {
 					total.textContent = formatCurrency(0);
 				}
+				if (subtotalNode) {
+					subtotalNode.textContent = formatCurrency(0);
+				}
+				if (shippingNode) {
+					shippingNode.textContent = formatCurrency(0);
+				}
 				if (whatsappButton) {
 					whatsappButton.href = "#";
 					whatsappButton.classList.add("is-disabled");
@@ -936,12 +963,20 @@
 				summary.hidden = false;
 			}
 
+			var subtotalValue = calculateCartTotal(cartItems);
+			var shippingValue = subtotalValue > 0 ? shippingChargeRupees : 0;
+			if (subtotalNode) {
+				subtotalNode.textContent = formatCurrency(subtotalValue);
+			}
+			if (shippingNode) {
+				shippingNode.textContent = formatCurrency(shippingValue);
+			}
 			if (total) {
-				total.textContent = formatCurrency(calculateCartTotal(cartItems));
+				total.textContent = formatCurrency(calculateCartGrandTotal(cartItems, shippingChargeRupees));
 			}
 
 			if (whatsappButton) {
-				var orderMessageURL = buildWhatsAppOrderURL(phone, prefill, cartItems);
+				var orderMessageURL = buildWhatsAppOrderURL(phone, prefill, cartItems, shippingChargeRupees);
 				whatsappButton.href = orderMessageURL;
 				var disabled = orderMessageURL === "#";
 				whatsappButton.classList.toggle("is-disabled", disabled);
@@ -1096,8 +1131,392 @@
 		renderCartPage();
 	}
 
+	function formatDateTime(value) {
+		var normalized = sanitizeText(value);
+		if (!normalized) {
+			return "-";
+		}
+
+		var parsedDate = new Date(normalized);
+		if (isNaN(parsedDate.getTime())) {
+			return normalized;
+		}
+
+		if (typeof Intl !== "undefined" && Intl.DateTimeFormat) {
+			return new Intl.DateTimeFormat("en-IN", {
+				dateStyle: "medium",
+				timeStyle: "short"
+			}).format(parsedDate);
+		}
+
+		return parsedDate.toLocaleString();
+	}
+
+	function formatPaiseAsCurrency(value) {
+		return formatCurrency(toInteger(value, 0) / 100);
+	}
+
+	function renderAdminOrderDetail(detailNode, payload) {
+		if (!detailNode) {
+			return;
+		}
+
+		if (!payload || !payload.order) {
+			detailNode.hidden = true;
+			detailNode.innerHTML = "";
+			return;
+		}
+
+		var order = payload.order;
+		var items = Array.isArray(payload.items) ? payload.items : [];
+		var events = Array.isArray(payload.events) ? payload.events : [];
+		var shippingAddress = [
+			sanitizeText(order.shipping_address_line1),
+			sanitizeText(order.shipping_address_line2),
+			sanitizeText(order.shipping_city),
+			sanitizeText(order.shipping_state),
+			sanitizeText(order.shipping_pincode),
+			sanitizeText(order.shipping_country)
+		].filter(function (value) {
+			return !!value;
+		}).join(", ");
+
+		var itemsMarkup = items.length
+			? items.map(function (item) {
+				return "<tr>" +
+					"<td>" + escapeHTML(sanitizeText(item.product_name) || "-") + "</td>" +
+					"<td>" + toInteger(item.quantity, 0) + "</td>" +
+					"<td>" + escapeHTML(formatPaiseAsCurrency(item.unit_price_paise)) + "</td>" +
+					"<td>" + escapeHTML(formatPaiseAsCurrency(item.line_total_paise)) + "</td>" +
+				"</tr>";
+			}).join("")
+			: '<tr><td colspan="4">No item rows found.</td></tr>';
+
+		var eventsMarkup = events.length
+			? "<ul>" + events.map(function (eventRow) {
+				var eventLabel = sanitizeText(eventRow.event_type) || "event";
+				var eventTime = formatDateTime(eventRow.processed_at);
+				var eventID = sanitizeText(eventRow.event_id);
+				return "<li><strong>" + escapeHTML(eventLabel) + "</strong> at " + escapeHTML(eventTime) + (eventID ? " (" + escapeHTML(eventID) + ")" : "") + "</li>";
+			}).join("") + "</ul>"
+			: "<p>No webhook events stored for this order yet.</p>";
+
+		detailNode.innerHTML = "<div class=\"orders-admin__detail-head\">" +
+			"<h4>Order " + escapeHTML(sanitizeText(order.id)) + "</h4>" +
+			"<span class=\"orders-admin__status-tag orders-admin__status-tag--" + escapeHTML(sanitizeText(order.status).toLowerCase()) + "\">" + escapeHTML(sanitizeText(order.status) || "pending") + "</span>" +
+		"</div>" +
+		"<div class=\"orders-admin__detail-grid\">" +
+			"<div>" +
+				"<h5>Customer</h5>" +
+				"<p><strong>Name:</strong> " + escapeHTML(sanitizeText(order.customer_name) || "-") + "</p>" +
+				"<p><strong>Phone:</strong> " + escapeHTML(sanitizeText(order.customer_phone) || "-") + "</p>" +
+				"<p><strong>Email:</strong> " + escapeHTML(sanitizeText(order.customer_email) || "-") + "</p>" +
+			"</div>" +
+			"<div>" +
+				"<h5>Shipping</h5>" +
+				"<p>" + escapeHTML(shippingAddress || "-") + "</p>" +
+			"</div>" +
+			"<div>" +
+				"<h5>Payment</h5>" +
+				"<p><strong>Local Order:</strong> " + escapeHTML(sanitizeText(order.id) || "-") + "</p>" +
+				"<p><strong>Razorpay Order:</strong> " + escapeHTML(sanitizeText(order.razorpay_order_id) || "-") + "</p>" +
+				"<p><strong>Razorpay Payment:</strong> " + escapeHTML(sanitizeText(order.razorpay_payment_id) || "-") + "</p>" +
+				"<p><strong>Created:</strong> " + escapeHTML(formatDateTime(order.created_at)) + "</p>" +
+				"<p><strong>Paid At:</strong> " + escapeHTML(formatDateTime(order.paid_at)) + "</p>" +
+			"</div>" +
+			"<div>" +
+				"<h5>Totals</h5>" +
+				"<p><strong>Subtotal:</strong> " + escapeHTML(formatPaiseAsCurrency(order.subtotal_paise)) + "</p>" +
+				"<p><strong>Shipping:</strong> " + escapeHTML(formatPaiseAsCurrency(order.shipping_paise)) + "</p>" +
+				"<p><strong>Total:</strong> " + escapeHTML(formatPaiseAsCurrency(order.amount_paise)) + "</p>" +
+				"<p><strong>Items:</strong> " + toInteger(order.item_count, 0) + "</p>" +
+			"</div>" +
+		"</div>" +
+		"<div class=\"orders-admin__detail-table-wrap\">" +
+			"<h5>Items</h5>" +
+			"<table class=\"orders-admin__detail-table\">" +
+				"<thead><tr><th>Product</th><th>Qty</th><th>Unit Price</th><th>Line Total</th></tr></thead>" +
+				"<tbody>" + itemsMarkup + "</tbody>" +
+			"</table>" +
+		"</div>" +
+		"<div class=\"orders-admin__detail-events\">" +
+			"<h5>Webhook Events</h5>" +
+			eventsMarkup +
+		"</div>";
+
+		detailNode.hidden = false;
+	}
+
+	function initOrdersAdminPage() {
+		var adminPage = document.querySelector("[data-orders-admin]");
+		if (!adminPage) {
+			return;
+		}
+
+		var tokenInput = adminPage.querySelector("[data-admin-token]");
+		var loadButton = adminPage.querySelector("[data-admin-load]");
+		var refreshButton = adminPage.querySelector("[data-admin-refresh]");
+		var searchButton = adminPage.querySelector("[data-admin-search-button]");
+		var statusFilter = adminPage.querySelector("[data-admin-status-filter]");
+		var searchInput = adminPage.querySelector("[data-admin-search]");
+		var controls = adminPage.querySelector("[data-admin-controls]");
+		var statusMessage = adminPage.querySelector("[data-admin-status-message]");
+		var metricsNode = adminPage.querySelector("[data-admin-metrics]");
+		var totalOrdersNode = adminPage.querySelector("[data-admin-total-orders]");
+		var paidOrdersNode = adminPage.querySelector("[data-admin-paid-orders]");
+		var paidRevenueNode = adminPage.querySelector("[data-admin-paid-revenue]");
+		var tableWrap = adminPage.querySelector("[data-admin-table-wrap]");
+		var tableBody = adminPage.querySelector("[data-admin-orders-body]");
+		var emptyNode = adminPage.querySelector("[data-admin-empty]");
+		var detailNode = adminPage.querySelector("[data-admin-order-detail]");
+		var listURL = adminPage.getAttribute("data-admin-orders-url") || "/api/admin-orders";
+		var detailURL = adminPage.getAttribute("data-admin-order-url") || "/api/admin-order";
+		var storageKey = "toidel.admin.orders.token";
+		var loading = false;
+
+		function setStatusMessage(message, tone) {
+			if (!statusMessage) {
+				return;
+			}
+
+			var text = sanitizeText(message);
+			statusMessage.classList.remove("is-success");
+			statusMessage.classList.remove("is-error");
+			if (!text) {
+				statusMessage.textContent = "";
+				statusMessage.hidden = true;
+				return;
+			}
+
+			statusMessage.textContent = text;
+			statusMessage.hidden = false;
+			if (tone === "success") {
+				statusMessage.classList.add("is-success");
+			}
+			if (tone === "error") {
+				statusMessage.classList.add("is-error");
+			}
+		}
+
+		function getAdminToken() {
+			return sanitizeText(tokenInput && tokenInput.value);
+		}
+
+		function setLoadingState(value) {
+			loading = !!value;
+			if (loadButton) {
+				loadButton.disabled = loading;
+			}
+			if (refreshButton) {
+				refreshButton.disabled = loading;
+			}
+			if (searchButton) {
+				searchButton.disabled = loading;
+			}
+		}
+
+		function requestAdminJSON(url) {
+			var token = getAdminToken();
+			if (!token) {
+				return Promise.reject(new Error("Enter admin access token first."));
+			}
+
+			return fetch(url, {
+				method: "GET",
+				headers: {
+					"x-admin-token": token
+				}
+			}).then(function (response) {
+				return parseResponseJSON(response).then(function (data) {
+					if (!response.ok) {
+						throw new Error(sanitizeText(data.error || "Request failed."));
+					}
+					return data;
+				});
+			});
+		}
+
+		function renderSummary(summary) {
+			if (!metricsNode || !summary) {
+				return;
+			}
+
+			var byStatus = summary.by_status || {};
+			if (totalOrdersNode) {
+				totalOrdersNode.textContent = String(toInteger(summary.total_orders, 0));
+			}
+			if (paidOrdersNode) {
+				paidOrdersNode.textContent = String(toInteger(byStatus.paid, 0));
+			}
+			if (paidRevenueNode) {
+				paidRevenueNode.textContent = formatPaiseAsCurrency(summary.paid_amount_paise);
+			}
+			metricsNode.hidden = false;
+		}
+
+		function renderOrders(orders) {
+			if (!tableBody || !tableWrap || !emptyNode) {
+				return;
+			}
+
+			if (!Array.isArray(orders) || !orders.length) {
+				tableBody.innerHTML = "";
+				tableWrap.hidden = true;
+				emptyNode.hidden = false;
+				return;
+			}
+
+			tableBody.innerHTML = orders.map(function (order) {
+				var status = sanitizeText(order.status).toLowerCase() || "pending";
+				return "<tr data-admin-order-id=\"" + escapeHTML(sanitizeText(order.id)) + "\">" +
+					"<td>" + escapeHTML(formatDateTime(order.created_at)) + "</td>" +
+					"<td>" + escapeHTML(sanitizeText(order.id)) + "</td>" +
+					"<td><span class=\"orders-admin__status-tag orders-admin__status-tag--" + escapeHTML(status) + "\">" + escapeHTML(status) + "</span></td>" +
+					"<td>" + escapeHTML(sanitizeText(order.customer_name) || "-") + "</td>" +
+					"<td>" + escapeHTML(sanitizeText(order.customer_phone) || "-") + "</td>" +
+					"<td>" + escapeHTML(formatPaiseAsCurrency(order.amount_paise)) + "</td>" +
+					"<td>" + escapeHTML(sanitizeText(order.razorpay_payment_id) || "-") + "</td>" +
+				"</tr>";
+			}).join("");
+			tableWrap.hidden = false;
+			emptyNode.hidden = true;
+		}
+
+		function buildListRequestURL() {
+			var url = new URL(listURL, window.location.origin);
+			var status = sanitizeText(statusFilter && statusFilter.value).toLowerCase() || "all";
+			var search = sanitizeText(searchInput && searchInput.value);
+			url.searchParams.set("limit", "100");
+			if (status && status !== "all") {
+				url.searchParams.set("status", status);
+			}
+			if (search) {
+				url.searchParams.set("q", search);
+			}
+			return url.toString();
+		}
+
+		function loadOrders() {
+			if (loading) {
+				return;
+			}
+
+			var token = getAdminToken();
+			if (!token) {
+				setStatusMessage("Enter admin access token first.", "error");
+				return;
+			}
+
+			setLoadingState(true);
+			setStatusMessage("Loading orders...", "");
+				requestAdminJSON(buildListRequestURL())
+					.then(function (payload) {
+						try {
+							sessionStorage.setItem(storageKey, token);
+						} catch (error) {
+							// Ignore storage failures (private mode, disabled storage).
+						}
+						if (controls) {
+							controls.hidden = false;
+						}
+					renderSummary(payload.summary || {});
+					renderOrders(payload.orders || []);
+					renderAdminOrderDetail(detailNode, null);
+					setStatusMessage("Orders updated.", "success");
+				})
+				.catch(function (error) {
+					setStatusMessage((error && error.message) || "Unable to load orders.", "error");
+				})
+				.then(function () {
+					setLoadingState(false);
+				});
+		}
+
+		function loadOrderDetail(orderID) {
+			var normalizedOrderID = sanitizeText(orderID);
+			if (!normalizedOrderID || loading) {
+				return;
+			}
+
+			setLoadingState(true);
+			setStatusMessage("Loading order details...", "");
+			var url = new URL(detailURL, window.location.origin);
+			url.searchParams.set("id", normalizedOrderID);
+			requestAdminJSON(url.toString())
+				.then(function (payload) {
+					renderAdminOrderDetail(detailNode, payload);
+					setStatusMessage("Showing order details.", "success");
+				})
+				.catch(function (error) {
+					setStatusMessage((error && error.message) || "Unable to load order details.", "error");
+				})
+				.then(function () {
+					setLoadingState(false);
+				});
+		}
+
+		if (loadButton) {
+			loadButton.addEventListener("click", function (event) {
+				event.preventDefault();
+				loadOrders();
+			});
+		}
+
+		if (refreshButton) {
+			refreshButton.addEventListener("click", function (event) {
+				event.preventDefault();
+				loadOrders();
+			});
+		}
+
+		if (searchButton) {
+			searchButton.addEventListener("click", function (event) {
+				event.preventDefault();
+				loadOrders();
+			});
+		}
+
+		if (statusFilter) {
+			statusFilter.addEventListener("change", function () {
+				loadOrders();
+			});
+		}
+
+		if (searchInput) {
+			searchInput.addEventListener("keydown", function (event) {
+				if (event.key !== "Enter") {
+					return;
+				}
+				event.preventDefault();
+				loadOrders();
+			});
+		}
+
+		if (tableBody) {
+			tableBody.addEventListener("click", function (event) {
+				var row = closestElement(event.target, "[data-admin-order-id]");
+				if (!row) {
+					return;
+				}
+				event.preventDefault();
+				var orderID = row.getAttribute("data-admin-order-id") || "";
+				loadOrderDetail(orderID);
+			});
+		}
+
+			try {
+				var savedToken = sessionStorage.getItem(storageKey);
+				if (savedToken && tokenInput) {
+					tokenInput.value = savedToken;
+				}
+			} catch (error) {
+				// Ignore storage failures.
+			}
+		}
+
 	initStylePicker();
 	initCatalogFilters();
 	initCartButtons();
 	initCartPage();
+	initOrdersAdminPage();
 })();

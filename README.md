@@ -63,29 +63,36 @@ Cloudflare Pages environment variables required for Razorpay:
 - `RAZORPAY_KEY_SECRET`
 - `RAZORPAY_WEBHOOK_SECRET`
 - `DB` (D1 binding)
+- `ORDER_ADMIN_TOKEN` (for `/admin/orders/` access)
 
 Optional environment variables:
 
 - `RAZORPAY_BRAND_NAME` (default: `Toidel`)
 - `RAZORPAY_CHECKOUT_DESCRIPTION` (default: `Cart order payment`)
 - `RAZORPAY_RECEIPT_PREFIX` (default: `toidel`)
+- `SHIPPING_CHARGE_PAISE` (default: `10000`, i.e. `₹100`)
 
 Implemented Pages Functions:
 
 - `/api/razorpay-order` creates an order in Razorpay
 - `/api/razorpay-verify` verifies Razorpay signature after checkout and updates order status
 - `/api/razorpay-webhook` validates Razorpay webhooks and idempotently updates order status
+- `/api/admin-orders` returns protected order list + summary for admin view
+- `/api/admin-order` returns protected per-order detail (items + webhook events)
 
 ### D1 Setup
 
 1. Create a D1 database in Cloudflare.
 2. Bind it to this Pages project as `DB` (Preview + Production).
-3. Apply the schema from `/Users/prakash/github.com/pkeshi-s-castle/toidel-website/migrations/0001_orders.sql`.
+3. Apply these schema migrations:
+   - `/Users/prakash/github.com/pkeshi-s-castle/toidel-website/migrations/0001_orders.sql`
+   - `/Users/prakash/github.com/pkeshi-s-castle/toidel-website/migrations/0002_order_totals.sql`
 
 Example with Wrangler:
 
 ```bash
 wrangler d1 execute <YOUR_DB_NAME> --remote --file=./migrations/0001_orders.sql
+wrangler d1 execute <YOUR_DB_NAME> --remote --file=./migrations/0002_order_totals.sql
 ```
 
 ### Razorpay Webhook Setup
@@ -132,3 +139,17 @@ This repo now includes Decap CMS at `/admin` so a non-technical partner can add/
 3. Open **Products** collection.
 4. Create, edit, or delete products.
 5. Save changes. Cloudflare Pages redeploys automatically.
+
+## Orders Admin View
+
+- URL: `https://<your-domain>/admin/orders/`
+- Access token: value from `ORDER_ADMIN_TOKEN` in Cloudflare Pages env vars
+
+This view shows:
+
+- Payment status (`pending`, `paid`, `failed`, `refunded`)
+- Customer phone/email + shipping address
+- Item rows with quantity and line totals
+- Razorpay order/payment references
+
+The checkout flow applies a flat shipping charge (`₹100` by default) to every order and stores `subtotal + shipping + total` in D1.

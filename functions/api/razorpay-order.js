@@ -4,6 +4,7 @@ import {
 	buildNotes,
 	buildReceipt,
 	calculateAmountPaise,
+	calculateOrderAmountPaise,
 	createPendingOrderRecord,
 	jsonResponse,
 	markOrderCreateFailed,
@@ -14,6 +15,7 @@ import {
 	parseJSONText,
 	requiredD1,
 	requiredEnv,
+	resolveShippingPaise,
 	sanitizeText,
 	validateCheckoutDetails,
 } from "./_lib/payment-store.js";
@@ -35,8 +37,10 @@ export async function onRequest(context) {
 			return jsonResponse(400, { error: "Cart is empty." });
 		}
 
-		const amount = calculateAmountPaise(items);
-		if (!Number.isFinite(amount) || amount <= 0) {
+		const subtotalPaise = calculateAmountPaise(items);
+		const shippingPaise = resolveShippingPaise(env.SHIPPING_CHARGE_PAISE);
+		const amount = calculateOrderAmountPaise(items, shippingPaise);
+		if (!Number.isFinite(subtotalPaise) || subtotalPaise <= 0) {
 			return jsonResponse(400, { error: "Invalid order amount." });
 		}
 
@@ -53,13 +57,15 @@ export async function onRequest(context) {
 
 		const localOrderID = buildLocalOrderID();
 		const receipt = buildReceipt(env.RAZORPAY_RECEIPT_PREFIX, localOrderID);
-		const notes = buildNotes({ items, localOrderID, customer, shipping });
+		const notes = buildNotes({ items, localOrderID, customer, shipping, shippingPaise });
 		const itemPreview = sanitizeText(notes.item_preview);
 
 		await createPendingOrderRecord(database, {
 			localOrderID,
 			currency: "INR",
 			amountPaise: amount,
+			subtotalPaise,
+			shippingPaise,
 			items,
 			itemPreview,
 			customer,
@@ -99,6 +105,8 @@ export async function onRequest(context) {
 			local_order_id: localOrderID,
 			order_id: responseData.id,
 			amount: responseData.amount,
+			subtotal: subtotalPaise,
+			shipping: shippingPaise,
 			currency: responseData.currency,
 			key_id: keyId,
 			name: sanitizeText(env.RAZORPAY_BRAND_NAME || "Toidel"),

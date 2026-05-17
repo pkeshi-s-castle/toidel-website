@@ -1,4 +1,5 @@
 const MAX_NOTE_LENGTH = 255;
+export const DEFAULT_SHIPPING_PAISE = 10000;
 
 export function jsonResponse(status, payload) {
 	return new Response(JSON.stringify(payload), {
@@ -104,6 +105,25 @@ export function calculateAmountPaise(items) {
 	return Math.round(totalRupees * 100);
 }
 
+export function resolveShippingPaise(rawValue) {
+	if (rawValue === undefined || rawValue === null || String(rawValue).trim() === "") {
+		return DEFAULT_SHIPPING_PAISE;
+	}
+
+	const parsed = toInteger(rawValue, DEFAULT_SHIPPING_PAISE);
+	if (!Number.isFinite(parsed) || parsed < 0) {
+		return DEFAULT_SHIPPING_PAISE;
+	}
+
+	return parsed;
+}
+
+export function calculateOrderAmountPaise(items, shippingPaise) {
+	const subtotalPaise = calculateAmountPaise(items);
+	const normalizedShippingPaise = resolveShippingPaise(shippingPaise);
+	return subtotalPaise + normalizedShippingPaise;
+}
+
 function normalizePhone(value) {
 	const compact = sanitizeText(value).replace(/[^\d+]/g, "");
 	if (!compact) {
@@ -201,7 +221,7 @@ export function buildReceipt(rawPrefix, localOrderID) {
 	return `${prefix}_${compactOrderID}`.slice(0, 40);
 }
 
-export function buildNotes({ items, localOrderID, customer, shipping }) {
+export function buildNotes({ items, localOrderID, customer, shipping, shippingPaise }) {
 	const compactItemList = items
 		.slice(0, 6)
 		.map((item) => `${item.name} x${item.quantity}`)
@@ -215,6 +235,7 @@ export function buildNotes({ items, localOrderID, customer, shipping }) {
 		item_preview: compactItemList,
 		customer_phone: sanitizeText(customer?.phone).slice(0, MAX_NOTE_LENGTH),
 		shipping_pincode: sanitizeText(shipping?.pincode).slice(0, MAX_NOTE_LENGTH),
+		shipping_paise: String(resolveShippingPaise(shippingPaise)).slice(0, MAX_NOTE_LENGTH),
 	};
 }
 
@@ -255,6 +276,36 @@ export function timingSafeEqual(left, right) {
 	return mismatch === 0;
 }
 
+function extractBearerToken(authorizationHeader) {
+	const rawValue = sanitizeText(authorizationHeader);
+	if (!rawValue) {
+		return "";
+	}
+
+	const match = rawValue.match(/^Bearer\s+(.+)$/i);
+	return match ? sanitizeText(match[1]) : "";
+}
+
+export function extractAdminToken(request) {
+	if (!request) {
+		return "";
+	}
+
+	const queryToken = sanitizeText(new URL(request.url).searchParams.get("token"));
+	const headerToken = sanitizeText(request.headers.get("x-admin-token"));
+	const bearerToken = extractBearerToken(request.headers.get("authorization"));
+	return headerToken || bearerToken || queryToken;
+}
+
+export function isValidAdminToken(request, env) {
+	const expectedToken = sanitizeText(requiredEnv(env, "ORDER_ADMIN_TOKEN"));
+	const requestToken = extractAdminToken(request);
+	if (!expectedToken || !requestToken) {
+		return false;
+	}
+	return timingSafeEqual(expectedToken, requestToken);
+}
+
 export function parseJSONText(textValue) {
 	try {
 		return JSON.parse(textValue);
@@ -284,6 +335,8 @@ export async function createPendingOrderRecord(db, orderData) {
 				status,
 				currency,
 				amount_paise,
+				subtotal_paise,
+				shipping_paise,
 				item_count,
 				item_preview,
 				customer_name,
@@ -297,11 +350,13 @@ export async function createPendingOrderRecord(db, orderData) {
 				shipping_country,
 				created_at,
 				updated_at
-			) VALUES (?, 'pending', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+			) VALUES (?, 'pending', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 		).bind(
 			orderData.localOrderID,
 			orderData.currency,
 			orderData.amountPaise,
+			orderData.subtotalPaise || 0,
+			orderData.shippingPaise || 0,
 			orderData.items.length,
 			orderData.itemPreview,
 			orderData.customer.name,

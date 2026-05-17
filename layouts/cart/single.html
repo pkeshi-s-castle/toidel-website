@@ -1,7 +1,7 @@
 {{ define "main" }}
 {{ $phone := .Site.Params.whatsapp_number | default "" }}
 {{ $prefill := .Site.Params.whatsapp_cart_prefill | default "Hi, I would like to place this order:" }}
-<div class="cart-page" data-cart-page data-cart-phone="{{ $phone }}" data-cart-prefill="{{ $prefill }}" data-razorpay-order-url="/api/razorpay-order" data-razorpay-verify-url="/api/razorpay-verify">
+<div class="cart-page" data-cart-page data-cart-phone="{{ $phone }}" data-cart-prefill="{{ $prefill }}" data-razorpay-order-url="/api/razorpay-order" data-razorpay-verify-url="/api/razorpay-verify" data-cart-shipping-charge="100">
 	<div class="cart-page__intro">
 		<h3>{{ .Title }}</h3>
 		{{ with .Content }}
@@ -12,9 +12,13 @@
 	<p class="cart-empty" data-cart-empty>Your cart is empty. Browse the catalog and add your favorite products.</p>
 	<ul class="cart-list" data-cart-items hidden></ul>
 
-	<div class="cart-summary" data-cart-summary hidden>
-		<p class="cart-summary__total">Total: <strong data-cart-total>INR 0</strong></p>
-		<div class="cart-checkout" data-cart-checkout>
+		<div class="cart-summary" data-cart-summary hidden>
+			<ul class="cart-summary__totals">
+				<li><span>Subtotal</span><strong data-cart-subtotal>INR 0</strong></li>
+				<li><span>Shipping</span><strong data-cart-shipping>INR 100</strong></li>
+				<li><span>Total</span><strong data-cart-total>INR 0</strong></li>
+			</ul>
+			<div class="cart-checkout" data-cart-checkout>
 			<h4>Delivery Details</h4>
 			<p>Please enter shipping and contact information before payment.</p>
 			<div class="cart-checkout__grid">

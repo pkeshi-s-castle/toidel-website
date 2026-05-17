@@ -1,0 +1,87 @@
+{{ define "main" }}
+<div
+	class="orders-admin"
+	data-orders-admin
+	data-admin-orders-url="/api/admin-orders"
+	data-admin-order-url="/api/admin-order"
+>
+	<div class="orders-admin__intro">
+		<h3>{{ .Title }}</h3>
+		{{ with .Content }}
+			{{ . }}
+		{{ end }}
+	</div>
+
+	<div class="orders-admin__auth">
+		<label for="orders-admin-token">Admin Access Token</label>
+		<div class="orders-admin__auth-row">
+			<input id="orders-admin-token" type="password" data-admin-token placeholder="Enter ORDER_ADMIN_TOKEN value" autocomplete="off">
+			<button type="button" class="catalog-action catalog-action--compact" data-admin-load>
+				<span class="catalog-action__label">Load Orders</span>
+			</button>
+		</div>
+		<p>This token is set in Cloudflare Pages environment variables as <strong>ORDER_ADMIN_TOKEN</strong>.</p>
+	</div>
+
+	<div class="orders-admin__controls" data-admin-controls hidden>
+		<label>
+			Status
+			<select data-admin-status-filter>
+				<option value="all">All</option>
+				<option value="pending">Pending</option>
+				<option value="paid">Paid</option>
+				<option value="failed">Failed</option>
+				<option value="refunded">Refunded</option>
+			</select>
+		</label>
+		<label>
+			Search
+			<input type="search" data-admin-search placeholder="Order ID, payment ID, customer, phone">
+		</label>
+		<button type="button" class="catalog-action catalog-action--compact" data-admin-search-button>
+			<span class="catalog-action__label">Search</span>
+		</button>
+		<button type="button" class="catalog-action catalog-action--compact" data-admin-refresh>
+			<span class="catalog-action__label">Refresh</span>
+		</button>
+	</div>
+
+	<p class="orders-admin__status" data-admin-status-message hidden></p>
+
+	<div class="orders-admin__metrics" data-admin-metrics hidden>
+		<div class="orders-admin__metric">
+			<span>Total orders</span>
+			<strong data-admin-total-orders>0</strong>
+		</div>
+		<div class="orders-admin__metric">
+			<span>Paid orders</span>
+			<strong data-admin-paid-orders>0</strong>
+		</div>
+		<div class="orders-admin__metric">
+			<span>Paid revenue</span>
+			<strong data-admin-paid-revenue>INR 0</strong>
+		</div>
+	</div>
+
+	<div class="orders-admin__table-wrap" data-admin-table-wrap hidden>
+		<table class="orders-admin__table">
+			<thead>
+				<tr>
+					<th>Created</th>
+					<th>Order Ref</th>
+					<th>Status</th>
+					<th>Customer</th>
+					<th>Phone</th>
+					<th>Total</th>
+					<th>Payment ID</th>
+				</tr>
+			</thead>
+			<tbody data-admin-orders-body></tbody>
+		</table>
+	</div>
+
+	<p class="orders-admin__empty" data-admin-empty hidden>No orders found for the selected filter.</p>
+
+	<section class="orders-admin__detail" data-admin-order-detail hidden></section>
+</div>
+{{ end }}

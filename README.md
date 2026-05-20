@@ -63,7 +63,6 @@ Cloudflare Pages environment variables required for Razorpay:
 - `RAZORPAY_KEY_SECRET`
 - `RAZORPAY_WEBHOOK_SECRET`
 - `DB` (D1 binding)
-- `ORDER_ADMIN_TOKEN` (for `/admin/orders/` access)
 
 Optional environment variables:
 
@@ -71,14 +70,15 @@ Optional environment variables:
 - `RAZORPAY_CHECKOUT_DESCRIPTION` (default: `Cart order payment`)
 - `RAZORPAY_RECEIPT_PREFIX` (default: `toidel`)
 - `SHIPPING_CHARGE_PAISE` (default: `10000`, i.e. `₹100`)
+- `ORDER_ADMIN_ALLOWED_EMAILS` (comma-separated allowlist for orders admin access)
 
 Implemented Pages Functions:
 
 - `/api/razorpay-order` creates an order in Razorpay
 - `/api/razorpay-verify` verifies Razorpay signature after checkout and updates order status
 - `/api/razorpay-webhook` validates Razorpay webhooks and idempotently updates order status
-- `/api/admin-orders` returns protected order list + summary for admin view
-- `/api/admin-order` returns protected per-order detail (items + webhook events)
+- `/api/admin-orders` returns Cloudflare Access-protected order list + summary for admin view
+- `/api/admin-order` returns Cloudflare Access-protected per-order detail (items + webhook events)
 
 ### D1 Setup
 
@@ -143,7 +143,7 @@ This repo now includes Decap CMS at `/admin` so a non-technical partner can add/
 ## Orders Admin View
 
 - URL: `https://<your-domain>/admin/orders/`
-- Access token: value from `ORDER_ADMIN_TOKEN` in Cloudflare Pages env vars
+- Protected by Cloudflare Access
 
 This view shows:
 
@@ -151,5 +151,21 @@ This view shows:
 - Customer phone/email + shipping address
 - Item rows with quantity and line totals
 - Razorpay order/payment references
+
+Cloudflare Pages environment variables required for Orders Admin API auth:
+
+- `CF_ACCESS_TEAM_DOMAIN` (example: `https://your-team.cloudflareaccess.com`)
+- `CF_ACCESS_AUD` (Access application Audience tag for the protected orders app)
+- Optional: `ORDER_ADMIN_ALLOWED_EMAILS` (extra email allowlist, comma-separated)
+
+Cloudflare Zero Trust setup:
+
+1. Create an Access Application that protects:
+   - `/admin/orders*`
+   - `/api/admin-orders*`
+   - `/api/admin-order*`
+2. Add an `Allow` policy for the specific emails who should manage orders.
+3. Copy the application's Audience (AUD) tag into `CF_ACCESS_AUD`.
+4. Set `CF_ACCESS_TEAM_DOMAIN` and `CF_ACCESS_AUD` in both Preview and Production environments.
 
 The checkout flow applies a flat shipping charge (`₹100` by default) to every order and stores `subtotal + shipping + total` in D1.

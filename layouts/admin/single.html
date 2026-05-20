@@ -13,17 +13,11 @@
 	</div>
 
 	<div class="orders-admin__auth">
-		<label for="orders-admin-token">Admin Access Token</label>
-		<div class="orders-admin__auth-row">
-			<input id="orders-admin-token" type="password" data-admin-token placeholder="Enter ORDER_ADMIN_TOKEN value" autocomplete="off">
-			<button type="button" class="catalog-action catalog-action--compact" data-admin-load>
-				<span class="catalog-action__label">Load Orders</span>
-			</button>
-		</div>
-		<p>This token is set in Cloudflare Pages environment variables as <strong>ORDER_ADMIN_TOKEN</strong>.</p>
+		<p><strong>Access control:</strong> This page is protected by Cloudflare Access. Sign in with an allowed email to continue.</p>
+		<p class="orders-admin__viewer" data-admin-viewer hidden></p>
 	</div>
 
-	<div class="orders-admin__controls" data-admin-controls hidden>
+	<div class="orders-admin__controls" data-admin-controls>
 		<label>
 			Status
 			<select data-admin-status-filter>

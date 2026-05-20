@@ -1,5 +1,7 @@
 const MAX_NOTE_LENGTH = 255;
 export const DEFAULT_SHIPPING_PAISE = 10000;
+const ACCESS_JWKS_CACHE_TTL_MS = 5 * 60 * 1000;
+const ACCESS_JWKS_CACHE = new Map();
 
 export function jsonResponse(status, payload) {
 	return new Response(JSON.stringify(payload), {
@@ -286,24 +288,227 @@ function extractBearerToken(authorizationHeader) {
 	return match ? sanitizeText(match[1]) : "";
 }
 
-export function extractAdminToken(request) {
-	if (!request) {
+function normalizeAccessDomain(rawValue) {
+	const normalized = sanitizeText(rawValue).replace(/\/+$/, "");
+	if (!normalized) {
 		return "";
 	}
-
-	const queryToken = sanitizeText(new URL(request.url).searchParams.get("token"));
-	const headerToken = sanitizeText(request.headers.get("x-admin-token"));
-	const bearerToken = extractBearerToken(request.headers.get("authorization"));
-	return headerToken || bearerToken || queryToken;
+	if (/^https?:\/\//i.test(normalized)) {
+		return normalized;
+	}
+	return `https://${normalized}`;
 }
 
-export function isValidAdminToken(request, env) {
-	const expectedToken = sanitizeText(requiredEnv(env, "ORDER_ADMIN_TOKEN"));
-	const requestToken = extractAdminToken(request);
-	if (!expectedToken || !requestToken) {
+function decodeBase64URLToBytes(rawValue) {
+	let base64Value = sanitizeText(rawValue).replace(/-/g, "+").replace(/_/g, "/");
+	if (!base64Value) {
+		throw new Error("Invalid JWT segment.");
+	}
+	while (base64Value.length % 4 !== 0) {
+		base64Value += "=";
+	}
+
+	const binaryValue = atob(base64Value);
+	const bytes = new Uint8Array(binaryValue.length);
+	for (let index = 0; index < binaryValue.length; index += 1) {
+		bytes[index] = binaryValue.charCodeAt(index);
+	}
+	return bytes;
+}
+
+function decodeBase64URLJSON(rawValue) {
+	const decodedBytes = decodeBase64URLToBytes(rawValue);
+	const decodedText = new TextDecoder().decode(decodedBytes);
+	return parseJSONText(decodedText);
+}
+
+function parseJWTToken(tokenValue) {
+	const token = sanitizeText(tokenValue);
+	const tokenParts = token.split(".");
+	if (tokenParts.length !== 3) {
+		throw new Error("Invalid Cloudflare Access token.");
+	}
+
+	const header = decodeBase64URLJSON(tokenParts[0]);
+	const payload = decodeBase64URLJSON(tokenParts[1]);
+	const signature = decodeBase64URLToBytes(tokenParts[2]);
+	if (!header || typeof header !== "object" || !payload || typeof payload !== "object" || !signature.length) {
+		throw new Error("Invalid Cloudflare Access token format.");
+	}
+
+	return {
+		token,
+		header,
+		payload,
+		signature,
+		signedData: new TextEncoder().encode(`${tokenParts[0]}.${tokenParts[1]}`),
+	};
+}
+
+function hasAudience(audienceClaim, expectedAudience) {
+	if (!expectedAudience) {
 		return false;
 	}
-	return timingSafeEqual(expectedToken, requestToken);
+
+	if (typeof audienceClaim === "string") {
+		return audienceClaim === expectedAudience;
+	}
+	if (Array.isArray(audienceClaim)) {
+		return audienceClaim.some((value) => sanitizeText(value) === expectedAudience);
+	}
+	return false;
+}
+
+function parseCSVValues(rawValue) {
+	return sanitizeText(rawValue)
+		.split(",")
+		.map((value) => sanitizeText(value).toLowerCase())
+		.filter((value) => !!value);
+}
+
+async function getAccessJWKs(teamDomain) {
+	const cacheKey = sanitizeText(teamDomain);
+	const currentTime = Date.now();
+	const cachedValue = ACCESS_JWKS_CACHE.get(cacheKey);
+	if (cachedValue && cachedValue.expiresAt > currentTime) {
+		return cachedValue.keysByKid;
+	}
+
+	const certsURL = `${teamDomain}/cdn-cgi/access/certs`;
+	const response = await fetch(certsURL, {
+		method: "GET",
+		headers: {
+			Accept: "application/json",
+		},
+	});
+
+	if (!response.ok) {
+		throw new Error(`Unable to fetch Cloudflare Access certs: ${response.status}`);
+	}
+
+	const certsPayload = await response.json().catch(() => null);
+	const keys = Array.isArray(certsPayload?.keys) ? certsPayload.keys : [];
+	const keysByKid = new Map();
+	for (const key of keys) {
+		const kid = sanitizeText(key?.kid);
+		if (!kid) {
+			continue;
+		}
+		keysByKid.set(kid, key);
+	}
+
+	if (keysByKid.size === 0) {
+		throw new Error("No Cloudflare Access signing keys were returned.");
+	}
+
+	const cacheControl = sanitizeText(response.headers.get("cache-control"));
+	const maxAgeMatch = cacheControl.match(/max-age=(\d+)/i);
+	const maxAgeMilliseconds = maxAgeMatch ? Math.max(1000, toInteger(maxAgeMatch[1], 0) * 1000) : ACCESS_JWKS_CACHE_TTL_MS;
+	const ttlMilliseconds = Math.min(ACCESS_JWKS_CACHE_TTL_MS, maxAgeMilliseconds);
+	ACCESS_JWKS_CACHE.set(cacheKey, {
+		expiresAt: currentTime + ttlMilliseconds,
+		keysByKid,
+	});
+
+	return keysByKid;
+}
+
+async function verifyCloudflareAccessJWT(jwtToken, env) {
+	const teamDomain = normalizeAccessDomain(requiredEnv(env, "CF_ACCESS_TEAM_DOMAIN"));
+	const audience = sanitizeText(requiredEnv(env, "CF_ACCESS_AUD"));
+	const parsedToken = parseJWTToken(jwtToken);
+	const algorithm = sanitizeText(parsedToken.header?.alg).toUpperCase();
+	const keyID = sanitizeText(parsedToken.header?.kid);
+
+	if (algorithm !== "RS256" || !keyID) {
+		throw new Error("Cloudflare Access token uses an unsupported signing algorithm.");
+	}
+
+	const keysByKid = await getAccessJWKs(teamDomain);
+	const keyData = keysByKid.get(keyID);
+	if (!keyData) {
+		throw new Error("Cloudflare Access signing key not found for token.");
+	}
+
+	const cryptoKey = await crypto.subtle.importKey(
+		"jwk",
+		keyData,
+		{ name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+		false,
+		["verify"],
+	);
+
+	const isSignatureValid = await crypto.subtle.verify(
+		"RSASSA-PKCS1-v1_5",
+		cryptoKey,
+		parsedToken.signature,
+		parsedToken.signedData,
+	);
+	if (!isSignatureValid) {
+		throw new Error("Cloudflare Access token signature validation failed.");
+	}
+
+	const payload = parsedToken.payload;
+	const tokenIssuer = normalizeAccessDomain(payload?.iss);
+	if (!tokenIssuer || tokenIssuer !== teamDomain) {
+		throw new Error("Cloudflare Access token issuer does not match.");
+	}
+	if (!hasAudience(payload?.aud, audience)) {
+		throw new Error("Cloudflare Access token audience does not match.");
+	}
+
+	const nowSeconds = Math.floor(Date.now() / 1000);
+	const expirySeconds = toInteger(payload?.exp, 0);
+	const notBeforeSeconds = toInteger(payload?.nbf, 0);
+	if (!expirySeconds || expirySeconds <= nowSeconds) {
+		throw new Error("Cloudflare Access token has expired.");
+	}
+	if (notBeforeSeconds && notBeforeSeconds > nowSeconds + 30) {
+		throw new Error("Cloudflare Access token is not valid yet.");
+	}
+
+	return payload;
+}
+
+function isEmailAllowed(emailValue, env) {
+	const normalizedEmail = sanitizeText(emailValue).toLowerCase();
+	if (!normalizedEmail) {
+		return false;
+	}
+
+	const allowedEmails = parseCSVValues(env.ORDER_ADMIN_ALLOWED_EMAILS || env.CF_ACCESS_ALLOWED_EMAILS || "");
+	if (!allowedEmails.length) {
+		return true;
+	}
+
+	return allowedEmails.includes(normalizedEmail);
+}
+
+export async function requireCloudflareAccessIdentity(request, env) {
+	const jwtAssertion = sanitizeText(request.headers.get("cf-access-jwt-assertion")) || extractBearerToken(request.headers.get("authorization"));
+	if (!jwtAssertion) {
+		throw new Error("Unauthorized request. Missing Cloudflare Access token.");
+	}
+
+	let tokenPayload = null;
+	try {
+		tokenPayload = await verifyCloudflareAccessJWT(jwtAssertion, env);
+	} catch (error) {
+		throw new Error(`Unauthorized request. ${error?.message || "Invalid Cloudflare Access token."}`);
+	}
+	const headerEmail = sanitizeText(request.headers.get("cf-access-authenticated-user-email")).toLowerCase();
+	const payloadEmail = sanitizeText(tokenPayload?.email).toLowerCase();
+	const identityEmail = headerEmail || payloadEmail;
+
+	if (!isEmailAllowed(identityEmail, env)) {
+		throw new Error("Unauthorized request. Email not allowed.");
+	}
+
+	return {
+		email: identityEmail,
+		sub: sanitizeText(tokenPayload?.sub),
+		issuer: sanitizeText(tokenPayload?.iss),
+	};
 }
 
 export function parseJSONText(textValue) {

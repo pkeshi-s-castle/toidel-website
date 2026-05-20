@@ -1253,13 +1253,12 @@
 			return;
 		}
 
-		var tokenInput = adminPage.querySelector("[data-admin-token]");
-		var loadButton = adminPage.querySelector("[data-admin-load]");
 		var refreshButton = adminPage.querySelector("[data-admin-refresh]");
 		var searchButton = adminPage.querySelector("[data-admin-search-button]");
 		var statusFilter = adminPage.querySelector("[data-admin-status-filter]");
 		var searchInput = adminPage.querySelector("[data-admin-search]");
 		var controls = adminPage.querySelector("[data-admin-controls]");
+		var viewerNode = adminPage.querySelector("[data-admin-viewer]");
 		var statusMessage = adminPage.querySelector("[data-admin-status-message]");
 		var metricsNode = adminPage.querySelector("[data-admin-metrics]");
 		var totalOrdersNode = adminPage.querySelector("[data-admin-total-orders]");
@@ -1271,7 +1270,6 @@
 		var detailNode = adminPage.querySelector("[data-admin-order-detail]");
 		var listURL = adminPage.getAttribute("data-admin-orders-url") || "/api/admin-orders";
 		var detailURL = adminPage.getAttribute("data-admin-order-url") || "/api/admin-order";
-		var storageKey = "toidel.admin.orders.token";
 		var loading = false;
 
 		function setStatusMessage(message, tone) {
@@ -1298,15 +1296,24 @@
 			}
 		}
 
-		function getAdminToken() {
-			return sanitizeText(tokenInput && tokenInput.value);
+		function setViewer(identity) {
+			if (!viewerNode) {
+				return;
+			}
+
+			var email = sanitizeText(identity && identity.email);
+			if (email) {
+				viewerNode.textContent = "Signed in as " + email;
+				viewerNode.hidden = false;
+				return;
+			}
+
+			viewerNode.textContent = "Signed in via Cloudflare Access";
+			viewerNode.hidden = false;
 		}
 
 		function setLoadingState(value) {
 			loading = !!value;
-			if (loadButton) {
-				loadButton.disabled = loading;
-			}
 			if (refreshButton) {
 				refreshButton.disabled = loading;
 			}
@@ -1316,16 +1323,9 @@
 		}
 
 		function requestAdminJSON(url) {
-			var token = getAdminToken();
-			if (!token) {
-				return Promise.reject(new Error("Enter admin access token first."));
-			}
-
 			return fetch(url, {
 				method: "GET",
-				headers: {
-					"x-admin-token": token
-				}
+				credentials: "same-origin"
 			}).then(function (response) {
 				return parseResponseJSON(response).then(function (data) {
 					if (!response.ok) {
@@ -1401,24 +1401,14 @@
 				return;
 			}
 
-			var token = getAdminToken();
-			if (!token) {
-				setStatusMessage("Enter admin access token first.", "error");
-				return;
-			}
-
 			setLoadingState(true);
 			setStatusMessage("Loading orders...", "");
-				requestAdminJSON(buildListRequestURL())
-					.then(function (payload) {
-						try {
-							sessionStorage.setItem(storageKey, token);
-						} catch (error) {
-							// Ignore storage failures (private mode, disabled storage).
-						}
-						if (controls) {
-							controls.hidden = false;
-						}
+			requestAdminJSON(buildListRequestURL())
+				.then(function (payload) {
+					setViewer(payload.viewer || {});
+					if (controls) {
+						controls.hidden = false;
+					}
 					renderSummary(payload.summary || {});
 					renderOrders(payload.orders || []);
 					renderAdminOrderDetail(detailNode, null);
@@ -1504,15 +1494,8 @@
 			});
 		}
 
-			try {
-				var savedToken = sessionStorage.getItem(storageKey);
-				if (savedToken && tokenInput) {
-					tokenInput.value = savedToken;
-				}
-			} catch (error) {
-				// Ignore storage failures.
-			}
-		}
+		loadOrders();
+	}
 
 	initStylePicker();
 	initCatalogFilters();

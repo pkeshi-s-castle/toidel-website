@@ -1,7 +1,7 @@
 import {
-	isValidAdminToken,
 	jsonResponse,
 	methodNotAllowed,
+	requireCloudflareAccessIdentity,
 	requiredD1,
 	sanitizeText,
 } from "./_lib/payment-store.js";
@@ -13,10 +13,7 @@ export async function onRequest(context) {
 			return methodNotAllowed("GET");
 		}
 
-		if (!isValidAdminToken(request, env)) {
-			return jsonResponse(401, { error: "Unauthorized request." });
-		}
-
+		const identity = await requireCloudflareAccessIdentity(request, env);
 		const orderID = sanitizeText(new URL(request.url).searchParams.get("id"));
 		if (!orderID) {
 			return jsonResponse(400, { error: "Order id is required." });
@@ -97,13 +94,16 @@ export async function onRequest(context) {
 
 		return jsonResponse(200, {
 			ok: true,
+			viewer: identity,
 			order,
 			items: Array.isArray(itemsResult?.results) ? itemsResult.results : [],
 			events,
 		});
 	} catch (error) {
-		return jsonResponse(500, {
-			error: error?.message || "Unable to fetch order details.",
+		const message = error?.message || "Unable to fetch order details.";
+		const status = /^Unauthorized request\./.test(message) ? 401 : 500;
+		return jsonResponse(status, {
+			error: message,
 		});
 	}
 }

@@ -1,7 +1,7 @@
 import {
-	isValidAdminToken,
 	jsonResponse,
 	methodNotAllowed,
+	requireCloudflareAccessIdentity,
 	requiredD1,
 	sanitizeText,
 	toInteger,
@@ -38,10 +38,7 @@ export async function onRequest(context) {
 			return methodNotAllowed("GET");
 		}
 
-		if (!isValidAdminToken(request, env)) {
-			return jsonResponse(401, { error: "Unauthorized request." });
-		}
-
+		const identity = await requireCloudflareAccessIdentity(request, env);
 		const database = requiredD1(env);
 		const requestURL = new URL(request.url);
 		const limit = normalizeLimit(requestURL.searchParams.get("limit"));
@@ -123,6 +120,7 @@ export async function onRequest(context) {
 
 		return jsonResponse(200, {
 			ok: true,
+			viewer: identity,
 			orders,
 			filters: {
 				status: status || "all",
@@ -136,8 +134,10 @@ export async function onRequest(context) {
 			},
 		});
 	} catch (error) {
-		return jsonResponse(500, {
-			error: error?.message || "Unable to fetch admin orders.",
+		const message = error?.message || "Unable to fetch admin orders.";
+		const status = /^Unauthorized request\./.test(message) ? 401 : 500;
+		return jsonResponse(status, {
+			error: message,
 		});
 	}
 }

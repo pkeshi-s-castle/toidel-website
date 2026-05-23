@@ -1,3 +1,13 @@
 name = "toidel-catalog"
 compatibility_date = "2026-02-08"
 pages_build_output_dir = "public"
+
+[[env.preview.d1_databases]]
+binding = "DB"
+database_name = "toideldb-preview"
+database_id = "52b71ac0-a408-4f61-be24-766c0702edbe"
+
+[[env.production.d1_databases]]
+binding = "DB"
+database_name = "toideldb"
+database_id = "1c036758-f7ef-46bf-a9a1-57f42aff16fd"

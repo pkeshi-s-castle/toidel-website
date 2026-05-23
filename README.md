@@ -2,10 +2,10 @@
 
 Static Hugo catalog website based on the [CloudCannon Fur Hugo template](https://github.com/CloudCannon/fur-hugo-template).
 
-This version is configured for inquiry-only selling flow:
+This version supports two checkout paths:
 
-- No payment gateway
-- Local cart with WhatsApp checkout message
+- Local cart with WhatsApp order message
+- Optional online payment with Razorpay
 - Product inquiry routed to WhatsApp
 
 ## Quick Configuration
@@ -53,6 +53,59 @@ The "Chat on WhatsApp" button is generated automatically per product.
 
 The cart page (`/cart`) lets shoppers review quantities and send a WhatsApp message containing all cart items and total.
 
+## Razorpay Checkout (Optional)
+
+The cart page supports direct Razorpay checkout with D1 order persistence.
+
+Cloudflare Pages environment variables required for Razorpay:
+
+- `RAZORPAY_KEY_ID`
+- `RAZORPAY_KEY_SECRET`
+- `RAZORPAY_WEBHOOK_SECRET`
+- `DB` (D1 binding)
+
+Optional environment variables:
+
+- `RAZORPAY_BRAND_NAME` (default: `Toidel`)
+- `RAZORPAY_CHECKOUT_DESCRIPTION` (default: `Cart order payment`)
+- `RAZORPAY_RECEIPT_PREFIX` (default: `toidel`)
+- `SHIPPING_CHARGE_PAISE` (default: `10000`, i.e. `₹100`)
+- `ORDER_ADMIN_ALLOWED_EMAILS` (comma-separated allowlist for orders admin access)
+
+Implemented Pages Functions:
+
+- `/api/razorpay-order` creates an order in Razorpay
+- `/api/razorpay-verify` verifies Razorpay signature after checkout and updates order status
+- `/api/razorpay-webhook` validates Razorpay webhooks and idempotently updates order status
+- `/api/admin-orders` returns Cloudflare Access-protected order list + summary for admin view
+- `/api/admin-order` returns Cloudflare Access-protected per-order detail (items + webhook events)
+
+### D1 Setup
+
+1. Create a D1 database in Cloudflare.
+2. Bind it to this Pages project as `DB` (Preview + Production).
+3. Apply these schema migrations:
+   - `/Users/prakash/github.com/pkeshi-s-castle/toidel-website/migrations/0001_orders.sql`
+   - `/Users/prakash/github.com/pkeshi-s-castle/toidel-website/migrations/0002_order_totals.sql`
+
+Example with Wrangler:
+
+```bash
+wrangler d1 execute <YOUR_DB_NAME> --remote --file=./migrations/0001_orders.sql
+wrangler d1 execute <YOUR_DB_NAME> --remote --file=./migrations/0002_order_totals.sql
+```
+
+### Razorpay Webhook Setup
+
+1. In Razorpay Dashboard, configure webhook URL:
+   - `https://<your-domain>/api/razorpay-webhook`
+2. Use the same secret in Razorpay and `RAZORPAY_WEBHOOK_SECRET`.
+3. Subscribe at minimum to:
+   - `payment.captured`
+   - `order.paid`
+   - `payment.failed`
+   - `payment.refunded`
+
 ## Admin Panel (Self-Hosted, Free)
 
 This repo now includes Decap CMS at `/admin` so a non-technical partner can add/update/delete products.
@@ -86,3 +139,33 @@ This repo now includes Decap CMS at `/admin` so a non-technical partner can add/
 3. Open **Products** collection.
 4. Create, edit, or delete products.
 5. Save changes. Cloudflare Pages redeploys automatically.
+
+## Orders Admin View
+
+- URL: `https://<your-domain>/admin/orders/`
+- Protected by Cloudflare Access
+
+This view shows:
+
+- Payment status (`pending`, `paid`, `failed`, `refunded`)
+- Customer phone/email + shipping address
+- Item rows with quantity and line totals
+- Razorpay order/payment references
+
+Cloudflare Pages environment variables required for Orders Admin API auth:
+
+- `CF_ACCESS_TEAM_DOMAIN` (example: `https://your-team.cloudflareaccess.com`)
+- `CF_ACCESS_AUD` (Access application Audience tag for the protected orders app)
+- Optional: `ORDER_ADMIN_ALLOWED_EMAILS` (extra email allowlist, comma-separated)
+
+Cloudflare Zero Trust setup:
+
+1. Create an Access Application that protects:
+   - `/admin/orders*`
+   - `/api/admin-orders*`
+   - `/api/admin-order*`
+2. Add an `Allow` policy for the specific emails who should manage orders.
+3. Copy the application's Audience (AUD) tag into `CF_ACCESS_AUD`.
+4. Set `CF_ACCESS_TEAM_DOMAIN` and `CF_ACCESS_AUD` in both Preview and Production environments.
+
+The checkout flow applies a flat shipping charge (`₹100` by default) to every order and stores `subtotal + shipping + total` in D1.

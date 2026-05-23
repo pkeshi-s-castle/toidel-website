@@ -1,7 +1,9 @@
 (function () {
 	"use strict";
 	var CART_STORAGE_KEY = "toidel.cart.v1";
+	var DEFAULT_SHIPPING_CHARGE_RUPEES = 100;
 	var currencyFormatter = null;
+	var razorpayScriptPromise = null;
 	var elementMatches = Element.prototype.matches || Element.prototype.msMatchesSelector || Element.prototype.webkitMatchesSelector;
 
 	function forEachNode(nodeList, callback) {
@@ -341,6 +343,15 @@
 		}, 0);
 	}
 
+	function calculateCartGrandTotal(items, shippingChargeRupees) {
+		var subtotal = calculateCartTotal(items);
+		var shippingCharge = toPrice(shippingChargeRupees);
+		if (subtotal <= 0) {
+			return 0;
+		}
+		return subtotal + shippingCharge;
+	}
+
 	function formatCurrency(amount) {
 		if (!currencyFormatter && typeof Intl !== "undefined" && Intl.NumberFormat) {
 			currencyFormatter = new Intl.NumberFormat("en-IN", {
@@ -440,9 +451,12 @@
 		});
 	}
 
-	function buildCartMessage(items, prefill) {
+	function buildCartMessage(items, prefill, shippingChargeRupees) {
 		var heading = sanitizeText(prefill) || "Hi, I would like to place this order:";
 		var lines = [heading, "", "Order details:"];
+		var subtotal = calculateCartTotal(items);
+		var shippingCharge = subtotal > 0 ? toPrice(shippingChargeRupees) : 0;
+		var total = subtotal + shippingCharge;
 
 		items.forEach(function (item, index) {
 			var lineTotal = item.quantity * item.price;
@@ -450,21 +464,318 @@
 		});
 
 		lines.push("");
-		lines.push("Total: " + formatCurrency(calculateCartTotal(items)));
+		lines.push("Subtotal: " + formatCurrency(subtotal));
+		lines.push("Shipping: " + formatCurrency(shippingCharge));
+		lines.push("Total: " + formatCurrency(total));
 		lines.push("");
 		lines.push("Please confirm availability and delivery details.");
 
 		return lines.join("\n");
 	}
 
-	function buildWhatsAppOrderURL(phone, prefill, items) {
+	function buildWhatsAppOrderURL(phone, prefill, items, shippingChargeRupees) {
 		var normalizedPhone = String(phone || "").replace(/[^\d]/g, "");
 		if (!normalizedPhone || !items.length) {
 			return "#";
 		}
 
-		var message = buildCartMessage(items, prefill);
+		var message = buildCartMessage(items, prefill, shippingChargeRupees);
 		return "https://wa.me/" + normalizedPhone + "?text=" + encodeURIComponent(message);
+	}
+
+	function parseResponseJSON(response) {
+		return response.json().catch(function () {
+			return {};
+		});
+	}
+
+	function postJSON(url, payload) {
+		return fetch(url, {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json"
+			},
+			body: JSON.stringify(payload || {})
+		})
+			.then(function (response) {
+				return parseResponseJSON(response).then(function (data) {
+					if (!response.ok) {
+						var message = sanitizeText(data.error || data.message || "Request failed.");
+						throw new Error(message || "Request failed.");
+					}
+					return data;
+				});
+			});
+	}
+
+	function ensureRazorpayLoaded() {
+		if (window.Razorpay) {
+			return Promise.resolve(window.Razorpay);
+		}
+
+		if (razorpayScriptPromise) {
+			return razorpayScriptPromise;
+		}
+
+		razorpayScriptPromise = new Promise(function (resolve, reject) {
+			var existingScript = document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]');
+			if (existingScript) {
+				existingScript.addEventListener("load", function () {
+					if (window.Razorpay) {
+						resolve(window.Razorpay);
+						return;
+					}
+					reject(new Error("Razorpay checkout was not available after loading."));
+				});
+				existingScript.addEventListener("error", function () {
+					reject(new Error("Unable to load Razorpay checkout script."));
+				});
+				return;
+			}
+
+			var script = document.createElement("script");
+			script.src = "https://checkout.razorpay.com/v1/checkout.js";
+			script.async = true;
+			script.onload = function () {
+				if (window.Razorpay) {
+					resolve(window.Razorpay);
+					return;
+				}
+				reject(new Error("Razorpay checkout was not available after loading."));
+			};
+			script.onerror = function () {
+				reject(new Error("Unable to load Razorpay checkout script."));
+			};
+			document.head.appendChild(script);
+		})
+			.catch(function (error) {
+				razorpayScriptPromise = null;
+				throw error;
+			});
+
+		return razorpayScriptPromise;
+	}
+
+	function createRazorpayOrder(orderURL, cartItems, checkoutDetails) {
+		return postJSON(orderURL, {
+			items: cartItems,
+			customer: checkoutDetails.customer,
+			shipping: checkoutDetails.shipping
+		});
+	}
+
+	function verifyRazorpayPayment(verifyURL, payload) {
+		return postJSON(verifyURL, payload);
+	}
+
+	function openRazorpayCheckout(checkoutData) {
+		return new Promise(function (resolve, reject) {
+			if (!window.Razorpay) {
+				reject(new Error("Razorpay checkout is unavailable."));
+				return;
+			}
+
+			var hasFinished = false;
+			function resolveOnce(value) {
+				if (hasFinished) {
+					return;
+				}
+				hasFinished = true;
+				resolve(value);
+			}
+
+			function rejectOnce(error) {
+				if (hasFinished) {
+					return;
+				}
+				hasFinished = true;
+				reject(error);
+			}
+
+			var options = {
+				key: checkoutData.key_id,
+				amount: checkoutData.amount,
+				currency: checkoutData.currency || "INR",
+				name: checkoutData.name || "Toidel",
+				description: checkoutData.description || "Cart order payment",
+				order_id: checkoutData.order_id,
+				handler: function (response) {
+					resolveOnce({
+						razorpay_order_id: response.razorpay_order_id || "",
+						razorpay_payment_id: response.razorpay_payment_id || "",
+						razorpay_signature: response.razorpay_signature || ""
+					});
+				},
+				modal: {
+					ondismiss: function () {
+						var error = new Error("Payment was cancelled.");
+						error.code = "payment_cancelled";
+						rejectOnce(error);
+					}
+				},
+				theme: {
+					color: "#0f5db8"
+				}
+			};
+
+			var checkout = new window.Razorpay(options);
+			checkout.on("payment.failed", function (event) {
+				var message = sanitizeText(event && event.error && (event.error.description || event.error.reason || event.error.source)) || "Payment failed.";
+				rejectOnce(new Error(message));
+			});
+			checkout.open();
+		});
+	}
+
+	function updatePaymentStatus(statusNode, message, tone) {
+		if (!statusNode) {
+			return;
+		}
+
+		var text = sanitizeText(message);
+		statusNode.classList.remove("is-success");
+		statusNode.classList.remove("is-error");
+
+		if (!text) {
+			statusNode.textContent = "";
+			statusNode.hidden = true;
+			return;
+		}
+
+		statusNode.textContent = text;
+		statusNode.hidden = false;
+		if (tone === "success") {
+			statusNode.classList.add("is-success");
+		} else if (tone === "error") {
+			statusNode.classList.add("is-error");
+		}
+	}
+
+	function updateOrderSuccess(successNode, details) {
+		if (!successNode) {
+			return;
+		}
+
+		if (!details || typeof details !== "object") {
+			successNode.hidden = true;
+			return;
+		}
+
+		var localOrderNode = successNode.querySelector("[data-success-local-order-id]");
+		var razorpayOrderNode = successNode.querySelector("[data-success-razorpay-order-id]");
+		var razorpayPaymentNode = successNode.querySelector("[data-success-razorpay-payment-id]");
+
+		if (localOrderNode) {
+			localOrderNode.textContent = sanitizeText(details.local_order_id) || "-";
+		}
+		if (razorpayOrderNode) {
+			razorpayOrderNode.textContent = sanitizeText(details.order_id) || "-";
+		}
+		if (razorpayPaymentNode) {
+			razorpayPaymentNode.textContent = sanitizeText(details.payment_id) || "-";
+		}
+
+		successNode.hidden = false;
+	}
+
+	function isValidCheckoutEmail(value) {
+		var email = sanitizeText(value).toLowerCase();
+		if (!email) {
+			return true;
+		}
+
+		return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+	}
+
+	function normalizeCheckoutPhone(value) {
+		var compact = sanitizeText(value).replace(/[^\d+]/g, "");
+		if (!compact) {
+			return "";
+		}
+
+		var startsWithPlus = compact.charAt(0) === "+";
+		var digits = compact.replace(/\D/g, "");
+		if (digits.length < 8 || digits.length > 15) {
+			return "";
+		}
+
+		return startsWithPlus ? "+" + digits : digits;
+	}
+
+	function collectCheckoutDetails(cartPage) {
+		var fields = {
+			name: cartPage.querySelector("[data-checkout-name]"),
+			phone: cartPage.querySelector("[data-checkout-phone]"),
+			email: cartPage.querySelector("[data-checkout-email]"),
+			addressLine1: cartPage.querySelector("[data-checkout-address-line1]"),
+			addressLine2: cartPage.querySelector("[data-checkout-address-line2]"),
+			city: cartPage.querySelector("[data-checkout-city]"),
+			state: cartPage.querySelector("[data-checkout-state]"),
+			pincode: cartPage.querySelector("[data-checkout-pincode]"),
+			country: cartPage.querySelector("[data-checkout-country]")
+		};
+
+		var data = {
+			customer: {
+				name: sanitizeText(fields.name && fields.name.value),
+				phone: sanitizeText(fields.phone && fields.phone.value),
+				email: sanitizeText(fields.email && fields.email.value).toLowerCase()
+			},
+			shipping: {
+				address_line1: sanitizeText(fields.addressLine1 && fields.addressLine1.value),
+				address_line2: sanitizeText(fields.addressLine2 && fields.addressLine2.value),
+				city: sanitizeText(fields.city && fields.city.value),
+				state: sanitizeText(fields.state && fields.state.value),
+				pincode: sanitizeText(fields.pincode && fields.pincode.value),
+				country: sanitizeText(fields.country && fields.country.value) || "India"
+			}
+		};
+
+		return {
+			fields: fields,
+			data: data
+		};
+	}
+
+	function validateCheckoutDetails(checkout) {
+		var data = checkout.data;
+		var fields = checkout.fields;
+
+		if (!data.customer.name) {
+			return { message: "Please enter the customer's full name.", field: fields.name };
+		}
+
+		var normalizedPhone = normalizeCheckoutPhone(data.customer.phone);
+		if (!normalizedPhone) {
+			return { message: "Please enter a valid phone number.", field: fields.phone };
+		}
+		data.customer.phone = normalizedPhone;
+
+		if (!isValidCheckoutEmail(data.customer.email)) {
+			return { message: "Please enter a valid email address.", field: fields.email };
+		}
+
+		if (!data.shipping.address_line1) {
+			return { message: "Please enter address line 1.", field: fields.addressLine1 };
+		}
+
+		if (!data.shipping.city) {
+			return { message: "Please enter the city.", field: fields.city };
+		}
+
+		if (!data.shipping.state) {
+			return { message: "Please enter the state.", field: fields.state };
+		}
+
+		if (!data.shipping.pincode) {
+			return { message: "Please enter the pincode.", field: fields.pincode };
+		}
+
+		if (!data.shipping.country) {
+			return { message: "Please enter the country.", field: fields.country };
+		}
+
+		return null;
 	}
 
 	function showAddedFeedback(button) {
@@ -529,12 +840,57 @@
 
 		var phone = cartPage.getAttribute("data-cart-phone") || "";
 		var prefill = cartPage.getAttribute("data-cart-prefill") || "";
+		var orderURL = cartPage.getAttribute("data-razorpay-order-url") || "/api/razorpay-order";
+		var verifyURL = cartPage.getAttribute("data-razorpay-verify-url") || "/api/razorpay-verify";
+		var shippingChargeRupees = toPrice(cartPage.getAttribute("data-cart-shipping-charge"));
+		if (shippingChargeRupees <= 0) {
+			shippingChargeRupees = DEFAULT_SHIPPING_CHARGE_RUPEES;
+		}
 		var cartList = cartPage.querySelector("[data-cart-items]");
 		var emptyState = cartPage.querySelector("[data-cart-empty]");
 		var summary = cartPage.querySelector("[data-cart-summary]");
+		var subtotalNode = cartPage.querySelector("[data-cart-subtotal]");
+		var shippingNode = cartPage.querySelector("[data-cart-shipping]");
 		var total = cartPage.querySelector("[data-cart-total]");
 		var whatsappButton = cartPage.querySelector("[data-cart-whatsapp]");
+		var payButton = cartPage.querySelector("[data-cart-pay]");
 		var clearButton = cartPage.querySelector("[data-cart-clear]");
+		var paymentStatus = cartPage.querySelector("[data-cart-payment-status]");
+		var orderSuccess = cartPage.querySelector("[data-cart-order-success]");
+		var newOrderButton = cartPage.querySelector("[data-cart-new-order]");
+		var paymentInProgress = false;
+		var orderCompleted = false;
+
+		function setOrderCompleted(value) {
+			orderCompleted = !!value;
+			cartPage.classList.toggle("is-order-complete", orderCompleted);
+		}
+
+		function syncPayButton(cartItems) {
+			if (!payButton) {
+				return;
+			}
+
+			var hasItems = Array.isArray(cartItems) && cartItems.length > 0;
+			var disabled = !hasItems || paymentInProgress || orderCompleted;
+			payButton.classList.toggle("is-disabled", disabled);
+			payButton.disabled = disabled;
+			if (disabled) {
+				payButton.setAttribute("aria-disabled", "true");
+			} else {
+				payButton.removeAttribute("aria-disabled");
+			}
+			if (paymentInProgress) {
+				payButton.setAttribute("aria-busy", "true");
+			} else {
+				payButton.removeAttribute("aria-busy");
+			}
+		}
+
+		function setPaymentInProgress(value) {
+			paymentInProgress = !!value;
+			syncPayButton(loadCart());
+		}
 
 		function renderCartPage() {
 			var cartItems = loadCart();
@@ -551,6 +907,12 @@
 				if (total) {
 					total.textContent = formatCurrency(0);
 				}
+				if (subtotalNode) {
+					subtotalNode.textContent = formatCurrency(0);
+				}
+				if (shippingNode) {
+					shippingNode.textContent = formatCurrency(0);
+				}
 				if (whatsappButton) {
 					whatsappButton.href = "#";
 					whatsappButton.classList.add("is-disabled");
@@ -559,6 +921,10 @@
 				if (summary) {
 					summary.hidden = true;
 				}
+
+				setOrderCompleted(false);
+				updateOrderSuccess(orderSuccess, null);
+				syncPayButton(cartItems);
 				return;
 			}
 
@@ -570,6 +936,7 @@
 						var escapedName = escapeHTML(item.name);
 						var escapedURL = escapeHTML(item.url);
 						var lineTotal = item.quantity * item.price;
+						var controlDisabled = orderCompleted ? ' disabled aria-disabled="true"' : "";
 
 						return '<li class="cart-item">' +
 							'<div class="cart-item__info">' +
@@ -577,12 +944,12 @@
 								'<p class="cart-item__price">' + formatCurrency(item.price) + ' each</p>' +
 							'</div>' +
 							'<div class="cart-item__qty">' +
-								'<button type="button" class="cart-qty-button" data-cart-decrement data-cart-item-id="' + escapedID + '" aria-label="Decrease quantity">-</button>' +
-								'<input type="number" min="1" step="1" class="cart-qty-input" value="' + item.quantity + '" data-cart-quantity data-cart-item-id="' + escapedID + '" aria-label="Item quantity" />' +
-								'<button type="button" class="cart-qty-button" data-cart-increment data-cart-item-id="' + escapedID + '" aria-label="Increase quantity">+</button>' +
+								'<button type="button" class="cart-qty-button" data-cart-decrement data-cart-item-id="' + escapedID + '" aria-label="Decrease quantity"' + controlDisabled + '>-</button>' +
+								'<input type="number" min="1" step="1" class="cart-qty-input" value="' + item.quantity + '" data-cart-quantity data-cart-item-id="' + escapedID + '" aria-label="Item quantity"' + controlDisabled + ' />' +
+								'<button type="button" class="cart-qty-button" data-cart-increment data-cart-item-id="' + escapedID + '" aria-label="Increase quantity"' + controlDisabled + '>+</button>' +
 							'</div>' +
 							'<p class="cart-item__line-total">' + formatCurrency(lineTotal) + '</p>' +
-							'<button type="button" class="cart-item__remove" data-cart-remove data-cart-item-id="' + escapedID + '">Remove</button>' +
+							'<button type="button" class="cart-item__remove" data-cart-remove data-cart-item-id="' + escapedID + '"' + controlDisabled + '>Remove</button>' +
 						'</li>';
 					})
 					.join("");
@@ -596,14 +963,22 @@
 				summary.hidden = false;
 			}
 
+			var subtotalValue = calculateCartTotal(cartItems);
+			var shippingValue = subtotalValue > 0 ? shippingChargeRupees : 0;
+			if (subtotalNode) {
+				subtotalNode.textContent = formatCurrency(subtotalValue);
+			}
+			if (shippingNode) {
+				shippingNode.textContent = formatCurrency(shippingValue);
+			}
 			if (total) {
-				total.textContent = formatCurrency(calculateCartTotal(cartItems));
+				total.textContent = formatCurrency(calculateCartGrandTotal(cartItems, shippingChargeRupees));
 			}
 
 			if (whatsappButton) {
-				var orderURL = buildWhatsAppOrderURL(phone, prefill, cartItems);
-				whatsappButton.href = orderURL;
-				var disabled = orderURL === "#";
+				var orderMessageURL = buildWhatsAppOrderURL(phone, prefill, cartItems, shippingChargeRupees);
+				whatsappButton.href = orderMessageURL;
+				var disabled = orderMessageURL === "#";
 				whatsappButton.classList.toggle("is-disabled", disabled);
 				if (disabled) {
 					whatsappButton.setAttribute("aria-disabled", "true");
@@ -611,11 +986,17 @@
 					whatsappButton.removeAttribute("aria-disabled");
 				}
 			}
+
+			syncPayButton(cartItems);
 		}
 
 		cartPage.addEventListener("click", function (event) {
 			var actionButton = closestElement(event.target, "[data-cart-increment], [data-cart-decrement], [data-cart-remove]");
 			if (actionButton) {
+				if (orderCompleted) {
+					return;
+				}
+
 				event.preventDefault();
 				var itemID = actionButton.getAttribute("data-cart-item-id") || "";
 				var cartItems = loadCart();
@@ -633,6 +1014,79 @@
 					setCartItemQuantity(itemID, 0);
 				}
 
+				setOrderCompleted(false);
+				updateOrderSuccess(orderSuccess, null);
+				renderCartPage();
+				return;
+			}
+
+			var payAction = closestElement(event.target, "[data-cart-pay]");
+			if (payAction && payButton && payAction === payButton) {
+				event.preventDefault();
+
+				if (paymentInProgress || orderCompleted) {
+					return;
+				}
+
+				var checkoutItems = loadCart();
+				if (!checkoutItems.length) {
+					renderCartPage();
+					return;
+				}
+
+				var checkout = collectCheckoutDetails(cartPage);
+				var validationError = validateCheckoutDetails(checkout);
+				if (validationError) {
+					updatePaymentStatus(paymentStatus, validationError.message, "error");
+					if (validationError.field && typeof validationError.field.focus === "function") {
+						validationError.field.focus();
+					}
+					return;
+				}
+
+				setPaymentInProgress(true);
+				updatePaymentStatus(paymentStatus, "Preparing secure checkout...", "");
+				updateOrderSuccess(orderSuccess, null);
+
+				ensureRazorpayLoaded()
+					.then(function () {
+						return createRazorpayOrder(orderURL, checkoutItems, checkout.data);
+					})
+					.then(function (checkoutData) {
+						updatePaymentStatus(paymentStatus, "Opening Razorpay checkout...", "");
+						return openRazorpayCheckout(checkoutData);
+					})
+					.then(function (paymentPayload) {
+						updatePaymentStatus(paymentStatus, "Verifying payment...", "");
+						return verifyRazorpayPayment(verifyURL, paymentPayload);
+					})
+					.then(function (verificationResult) {
+						updatePaymentStatus(paymentStatus, "Payment successful. Order is confirmed.", "success");
+						setOrderCompleted(true);
+						updateOrderSuccess(orderSuccess, verificationResult);
+					})
+					.catch(function (error) {
+						if (error && error.code === "payment_cancelled") {
+							updatePaymentStatus(paymentStatus, error.message || "Payment was cancelled.", "");
+							return;
+						}
+
+						updatePaymentStatus(paymentStatus, (error && error.message) || "Unable to complete payment.", "error");
+					})
+					.then(function () {
+						setPaymentInProgress(false);
+						renderCartPage();
+					});
+
+				return;
+			}
+
+			var newOrderAction = closestElement(event.target, "[data-cart-new-order]");
+			if (newOrderAction && newOrderButton && newOrderAction === newOrderButton) {
+				event.preventDefault();
+				setOrderCompleted(false);
+				updateOrderSuccess(orderSuccess, null);
+				updatePaymentStatus(paymentStatus, "", "");
 				renderCartPage();
 				return;
 			}
@@ -644,11 +1098,18 @@
 			event.preventDefault();
 			if (window.confirm("Clear all items from the cart?")) {
 				clearCart();
+				setOrderCompleted(false);
+				updatePaymentStatus(paymentStatus, "", "");
+				updateOrderSuccess(orderSuccess, null);
 				renderCartPage();
 			}
 		});
 
 		cartPage.addEventListener("change", function (event) {
+			if (orderCompleted) {
+				return;
+			}
+
 			var quantityInput = closestElement(event.target, "[data-cart-quantity]");
 			if (!quantityInput) {
 				return;
@@ -661,14 +1122,382 @@
 			}
 
 			setCartItemQuantity(itemID, newQuantity);
+			setOrderCompleted(false);
+			updatePaymentStatus(paymentStatus, "", "");
+			updateOrderSuccess(orderSuccess, null);
 			renderCartPage();
 		});
 
 		renderCartPage();
 	}
 
+	function formatDateTime(value) {
+		var normalized = sanitizeText(value);
+		if (!normalized) {
+			return "-";
+		}
+
+		var parsedDate = new Date(normalized);
+		if (isNaN(parsedDate.getTime())) {
+			return normalized;
+		}
+
+		if (typeof Intl !== "undefined" && Intl.DateTimeFormat) {
+			return new Intl.DateTimeFormat("en-IN", {
+				dateStyle: "medium",
+				timeStyle: "short"
+			}).format(parsedDate);
+		}
+
+		return parsedDate.toLocaleString();
+	}
+
+	function formatPaiseAsCurrency(value) {
+		return formatCurrency(toInteger(value, 0) / 100);
+	}
+
+	function renderAdminOrderDetail(detailNode, payload) {
+		if (!detailNode) {
+			return;
+		}
+
+		if (!payload || !payload.order) {
+			detailNode.hidden = true;
+			detailNode.innerHTML = "";
+			return;
+		}
+
+		var order = payload.order;
+		var items = Array.isArray(payload.items) ? payload.items : [];
+		var events = Array.isArray(payload.events) ? payload.events : [];
+		var shippingAddress = [
+			sanitizeText(order.shipping_address_line1),
+			sanitizeText(order.shipping_address_line2),
+			sanitizeText(order.shipping_city),
+			sanitizeText(order.shipping_state),
+			sanitizeText(order.shipping_pincode),
+			sanitizeText(order.shipping_country)
+		].filter(function (value) {
+			return !!value;
+		}).join(", ");
+
+		var itemsMarkup = items.length
+			? items.map(function (item) {
+				return "<tr>" +
+					"<td>" + escapeHTML(sanitizeText(item.product_name) || "-") + "</td>" +
+					"<td>" + toInteger(item.quantity, 0) + "</td>" +
+					"<td>" + escapeHTML(formatPaiseAsCurrency(item.unit_price_paise)) + "</td>" +
+					"<td>" + escapeHTML(formatPaiseAsCurrency(item.line_total_paise)) + "</td>" +
+				"</tr>";
+			}).join("")
+			: '<tr><td colspan="4">No item rows found.</td></tr>';
+
+		var eventsMarkup = events.length
+			? "<ul>" + events.map(function (eventRow) {
+				var eventLabel = sanitizeText(eventRow.event_type) || "event";
+				var eventTime = formatDateTime(eventRow.processed_at);
+				var eventID = sanitizeText(eventRow.event_id);
+				return "<li><strong>" + escapeHTML(eventLabel) + "</strong> at " + escapeHTML(eventTime) + (eventID ? " (" + escapeHTML(eventID) + ")" : "") + "</li>";
+			}).join("") + "</ul>"
+			: "<p>No webhook events stored for this order yet.</p>";
+
+		detailNode.innerHTML = "<div class=\"orders-admin__detail-head\">" +
+			"<h4>Order " + escapeHTML(sanitizeText(order.id)) + "</h4>" +
+			"<span class=\"orders-admin__status-tag orders-admin__status-tag--" + escapeHTML(sanitizeText(order.status).toLowerCase()) + "\">" + escapeHTML(sanitizeText(order.status) || "pending") + "</span>" +
+		"</div>" +
+		"<div class=\"orders-admin__detail-grid\">" +
+			"<div>" +
+				"<h5>Customer</h5>" +
+				"<p><strong>Name:</strong> " + escapeHTML(sanitizeText(order.customer_name) || "-") + "</p>" +
+				"<p><strong>Phone:</strong> " + escapeHTML(sanitizeText(order.customer_phone) || "-") + "</p>" +
+				"<p><strong>Email:</strong> " + escapeHTML(sanitizeText(order.customer_email) || "-") + "</p>" +
+			"</div>" +
+			"<div>" +
+				"<h5>Shipping</h5>" +
+				"<p>" + escapeHTML(shippingAddress || "-") + "</p>" +
+			"</div>" +
+			"<div>" +
+				"<h5>Payment</h5>" +
+				"<p><strong>Local Order:</strong> " + escapeHTML(sanitizeText(order.id) || "-") + "</p>" +
+				"<p><strong>Razorpay Order:</strong> " + escapeHTML(sanitizeText(order.razorpay_order_id) || "-") + "</p>" +
+				"<p><strong>Razorpay Payment:</strong> " + escapeHTML(sanitizeText(order.razorpay_payment_id) || "-") + "</p>" +
+				"<p><strong>Created:</strong> " + escapeHTML(formatDateTime(order.created_at)) + "</p>" +
+				"<p><strong>Paid At:</strong> " + escapeHTML(formatDateTime(order.paid_at)) + "</p>" +
+			"</div>" +
+			"<div>" +
+				"<h5>Totals</h5>" +
+				"<p><strong>Subtotal:</strong> " + escapeHTML(formatPaiseAsCurrency(order.subtotal_paise)) + "</p>" +
+				"<p><strong>Shipping:</strong> " + escapeHTML(formatPaiseAsCurrency(order.shipping_paise)) + "</p>" +
+				"<p><strong>Total:</strong> " + escapeHTML(formatPaiseAsCurrency(order.amount_paise)) + "</p>" +
+				"<p><strong>Items:</strong> " + toInteger(order.item_count, 0) + "</p>" +
+			"</div>" +
+		"</div>" +
+		"<div class=\"orders-admin__detail-table-wrap\">" +
+			"<h5>Items</h5>" +
+			"<table class=\"orders-admin__detail-table\">" +
+				"<thead><tr><th>Product</th><th>Qty</th><th>Unit Price</th><th>Line Total</th></tr></thead>" +
+				"<tbody>" + itemsMarkup + "</tbody>" +
+			"</table>" +
+		"</div>" +
+		"<div class=\"orders-admin__detail-events\">" +
+			"<h5>Webhook Events</h5>" +
+			eventsMarkup +
+		"</div>";
+
+		detailNode.hidden = false;
+	}
+
+	function initOrdersAdminPage() {
+		var adminPage = document.querySelector("[data-orders-admin]");
+		if (!adminPage) {
+			return;
+		}
+
+		var refreshButton = adminPage.querySelector("[data-admin-refresh]");
+		var searchButton = adminPage.querySelector("[data-admin-search-button]");
+		var statusFilter = adminPage.querySelector("[data-admin-status-filter]");
+		var searchInput = adminPage.querySelector("[data-admin-search]");
+		var controls = adminPage.querySelector("[data-admin-controls]");
+		var viewerNode = adminPage.querySelector("[data-admin-viewer]");
+		var statusMessage = adminPage.querySelector("[data-admin-status-message]");
+		var metricsNode = adminPage.querySelector("[data-admin-metrics]");
+		var totalOrdersNode = adminPage.querySelector("[data-admin-total-orders]");
+		var paidOrdersNode = adminPage.querySelector("[data-admin-paid-orders]");
+		var paidRevenueNode = adminPage.querySelector("[data-admin-paid-revenue]");
+		var tableWrap = adminPage.querySelector("[data-admin-table-wrap]");
+		var tableBody = adminPage.querySelector("[data-admin-orders-body]");
+		var emptyNode = adminPage.querySelector("[data-admin-empty]");
+		var detailNode = adminPage.querySelector("[data-admin-order-detail]");
+		var listURL = adminPage.getAttribute("data-admin-orders-url") || "/api/admin-orders";
+		var detailURL = adminPage.getAttribute("data-admin-order-url") || "/api/admin-order";
+		var loading = false;
+
+		function setStatusMessage(message, tone) {
+			if (!statusMessage) {
+				return;
+			}
+
+			var text = sanitizeText(message);
+			statusMessage.classList.remove("is-success");
+			statusMessage.classList.remove("is-error");
+			if (!text) {
+				statusMessage.textContent = "";
+				statusMessage.hidden = true;
+				return;
+			}
+
+			statusMessage.textContent = text;
+			statusMessage.hidden = false;
+			if (tone === "success") {
+				statusMessage.classList.add("is-success");
+			}
+			if (tone === "error") {
+				statusMessage.classList.add("is-error");
+			}
+		}
+
+		function setViewer(identity) {
+			if (!viewerNode) {
+				return;
+			}
+
+			var email = sanitizeText(identity && identity.email);
+			if (email) {
+				viewerNode.textContent = "Signed in as " + email;
+				viewerNode.hidden = false;
+				return;
+			}
+
+			viewerNode.textContent = "Signed in via Cloudflare Access";
+			viewerNode.hidden = false;
+		}
+
+		function setLoadingState(value) {
+			loading = !!value;
+			if (refreshButton) {
+				refreshButton.disabled = loading;
+			}
+			if (searchButton) {
+				searchButton.disabled = loading;
+			}
+		}
+
+		function requestAdminJSON(url) {
+			return fetch(url, {
+				method: "GET",
+				credentials: "same-origin"
+			}).then(function (response) {
+				var contentType = sanitizeText(response.headers.get("content-type")).toLowerCase();
+				if (contentType.indexOf("application/json") === -1) {
+					throw new Error("Access login/session is not active for admin APIs. Recheck Cloudflare Access routes.");
+				}
+
+				return parseResponseJSON(response).then(function (data) {
+					if (!response.ok) {
+						throw new Error(sanitizeText(data.error || "Request failed."));
+					}
+					return data;
+				});
+			});
+		}
+
+		function renderSummary(summary) {
+			if (!metricsNode || !summary) {
+				return;
+			}
+
+			var byStatus = summary.by_status || {};
+			if (totalOrdersNode) {
+				totalOrdersNode.textContent = String(toInteger(summary.total_orders, 0));
+			}
+			if (paidOrdersNode) {
+				paidOrdersNode.textContent = String(toInteger(byStatus.paid, 0));
+			}
+			if (paidRevenueNode) {
+				paidRevenueNode.textContent = formatPaiseAsCurrency(summary.paid_amount_paise);
+			}
+			metricsNode.hidden = false;
+		}
+
+		function renderOrders(orders) {
+			if (!tableBody || !tableWrap || !emptyNode) {
+				return;
+			}
+
+			if (!Array.isArray(orders) || !orders.length) {
+				tableBody.innerHTML = "";
+				tableWrap.hidden = true;
+				emptyNode.hidden = false;
+				return;
+			}
+
+			tableBody.innerHTML = orders.map(function (order) {
+				var status = sanitizeText(order.status).toLowerCase() || "pending";
+				return "<tr data-admin-order-id=\"" + escapeHTML(sanitizeText(order.id)) + "\">" +
+					"<td>" + escapeHTML(formatDateTime(order.created_at)) + "</td>" +
+					"<td>" + escapeHTML(sanitizeText(order.id)) + "</td>" +
+					"<td><span class=\"orders-admin__status-tag orders-admin__status-tag--" + escapeHTML(status) + "\">" + escapeHTML(status) + "</span></td>" +
+					"<td>" + escapeHTML(sanitizeText(order.customer_name) || "-") + "</td>" +
+					"<td>" + escapeHTML(sanitizeText(order.customer_phone) || "-") + "</td>" +
+					"<td>" + escapeHTML(formatPaiseAsCurrency(order.amount_paise)) + "</td>" +
+					"<td>" + escapeHTML(sanitizeText(order.razorpay_payment_id) || "-") + "</td>" +
+				"</tr>";
+			}).join("");
+			tableWrap.hidden = false;
+			emptyNode.hidden = true;
+		}
+
+		function buildListRequestURL() {
+			var url = new URL(listURL, window.location.origin);
+			var status = sanitizeText(statusFilter && statusFilter.value).toLowerCase() || "all";
+			var search = sanitizeText(searchInput && searchInput.value);
+			url.searchParams.set("limit", "100");
+			if (status && status !== "all") {
+				url.searchParams.set("status", status);
+			}
+			if (search) {
+				url.searchParams.set("q", search);
+			}
+			return url.toString();
+		}
+
+		function loadOrders() {
+			if (loading) {
+				return;
+			}
+
+			setLoadingState(true);
+			setStatusMessage("Loading orders...", "");
+			requestAdminJSON(buildListRequestURL())
+				.then(function (payload) {
+					setViewer(payload.viewer || {});
+					if (controls) {
+						controls.hidden = false;
+					}
+					renderSummary(payload.summary || {});
+					renderOrders(payload.orders || []);
+					renderAdminOrderDetail(detailNode, null);
+					setStatusMessage("Orders updated.", "success");
+				})
+				.catch(function (error) {
+					setStatusMessage((error && error.message) || "Unable to load orders.", "error");
+				})
+				.then(function () {
+					setLoadingState(false);
+				});
+		}
+
+		function loadOrderDetail(orderID) {
+			var normalizedOrderID = sanitizeText(orderID);
+			if (!normalizedOrderID || loading) {
+				return;
+			}
+
+			setLoadingState(true);
+			setStatusMessage("Loading order details...", "");
+			var url = new URL(detailURL, window.location.origin);
+			url.searchParams.set("id", normalizedOrderID);
+			requestAdminJSON(url.toString())
+				.then(function (payload) {
+					renderAdminOrderDetail(detailNode, payload);
+					setStatusMessage("Showing order details.", "success");
+				})
+				.catch(function (error) {
+					setStatusMessage((error && error.message) || "Unable to load order details.", "error");
+				})
+				.then(function () {
+					setLoadingState(false);
+				});
+		}
+
+		if (refreshButton) {
+			refreshButton.addEventListener("click", function (event) {
+				event.preventDefault();
+				loadOrders();
+			});
+		}
+
+		if (searchButton) {
+			searchButton.addEventListener("click", function (event) {
+				event.preventDefault();
+				loadOrders();
+			});
+		}
+
+		if (statusFilter) {
+			statusFilter.addEventListener("change", function () {
+				loadOrders();
+			});
+		}
+
+		if (searchInput) {
+			searchInput.addEventListener("keydown", function (event) {
+				if (event.key !== "Enter") {
+					return;
+				}
+				event.preventDefault();
+				loadOrders();
+			});
+		}
+
+		if (tableBody) {
+			tableBody.addEventListener("click", function (event) {
+				var row = closestElement(event.target, "[data-admin-order-id]");
+				if (!row) {
+					return;
+				}
+				event.preventDefault();
+				var orderID = row.getAttribute("data-admin-order-id") || "";
+				loadOrderDetail(orderID);
+			});
+		}
+
+		loadOrders();
+	}
+
 	initStylePicker();
 	initCatalogFilters();
 	initCartButtons();
 	initCartPage();
+	initOrdersAdminPage();
 })();

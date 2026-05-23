@@ -1,0 +1,81 @@
+{{ define "main" }}
+<div
+	class="orders-admin"
+	data-orders-admin
+	data-admin-orders-url="/api/admin-orders"
+	data-admin-order-url="/api/admin-order"
+>
+	<div class="orders-admin__intro">
+		<h3>{{ .Title }}</h3>
+		{{ with .Content }}
+			{{ . }}
+		{{ end }}
+	</div>
+
+	<div class="orders-admin__auth">
+		<p><strong>Access control:</strong> This page is protected by Cloudflare Access. Sign in with an allowed email to continue.</p>
+		<p class="orders-admin__viewer" data-admin-viewer hidden></p>
+	</div>
+
+	<div class="orders-admin__controls" data-admin-controls>
+		<label>
+			Status
+			<select data-admin-status-filter>
+				<option value="all">All</option>
+				<option value="pending">Pending</option>
+				<option value="paid">Paid</option>
+				<option value="failed">Failed</option>
+				<option value="refunded">Refunded</option>
+			</select>
+		</label>
+		<label>
+			Search
+			<input type="search" data-admin-search placeholder="Order ID, payment ID, customer, phone">
+		</label>
+		<button type="button" class="catalog-action catalog-action--compact" data-admin-search-button>
+			<span class="catalog-action__label">Search</span>
+		</button>
+		<button type="button" class="catalog-action catalog-action--compact" data-admin-refresh>
+			<span class="catalog-action__label">Refresh</span>
+		</button>
+	</div>
+
+	<p class="orders-admin__status" data-admin-status-message hidden></p>
+
+	<div class="orders-admin__metrics" data-admin-metrics hidden>
+		<div class="orders-admin__metric">
+			<span>Total orders</span>
+			<strong data-admin-total-orders>0</strong>
+		</div>
+		<div class="orders-admin__metric">
+			<span>Paid orders</span>
+			<strong data-admin-paid-orders>0</strong>
+		</div>
+		<div class="orders-admin__metric">
+			<span>Paid revenue</span>
+			<strong data-admin-paid-revenue>INR 0</strong>
+		</div>
+	</div>
+
+	<div class="orders-admin__table-wrap" data-admin-table-wrap hidden>
+		<table class="orders-admin__table">
+			<thead>
+				<tr>
+					<th>Created</th>
+					<th>Order Ref</th>
+					<th>Status</th>
+					<th>Customer</th>
+					<th>Phone</th>
+					<th>Total</th>
+					<th>Payment ID</th>
+				</tr>
+			</thead>
+			<tbody data-admin-orders-body></tbody>
+		</table>
+	</div>
+
+	<p class="orders-admin__empty" data-admin-empty hidden>No orders found for the selected filter.</p>
+
+	<section class="orders-admin__detail" data-admin-order-detail hidden></section>
+</div>
+{{ end }}

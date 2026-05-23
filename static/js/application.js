@@ -1327,6 +1327,11 @@
 				method: "GET",
 				credentials: "same-origin"
 			}).then(function (response) {
+				var contentType = sanitizeText(response.headers.get("content-type")).toLowerCase();
+				if (contentType.indexOf("application/json") === -1) {
+					throw new Error("Access login/session is not active for admin APIs. Recheck Cloudflare Access routes.");
+				}
+
 				return parseResponseJSON(response).then(function (data) {
 					if (!response.ok) {
 						throw new Error(sanitizeText(data.error || "Request failed."));

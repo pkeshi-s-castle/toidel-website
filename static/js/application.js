@@ -1450,13 +1450,6 @@
 				});
 		}
 
-		if (loadButton) {
-			loadButton.addEventListener("click", function (event) {
-				event.preventDefault();
-				loadOrders();
-			});
-		}
-
 		if (refreshButton) {
 			refreshButton.addEventListener("click", function (event) {
 				event.preventDefault();
